@@ -27,7 +27,7 @@ Internet Gateway (lab-igw)
 │  └─────────────────┘  └──────────────────┘  │
 └─────────────────────────────────────────────┘
 ```
-![Demo Image](../screenshots/vpc/01-create-vpc-a.png)
+
 ---
 
 ## ⚠️ Before You Start — 3 Mandatory Safety Steps
@@ -54,6 +54,13 @@ Select **VPC only** (not the wizard — you are building manually).
 | IPv4 CIDR | `10.0.0.0/16` |
 
 > **What this means:** Your VPC owns IPs `10.0.0.0` through `10.0.255.255` — 65,536 addresses total. You will carve subnets out of this range next.
+>
+
+![Create VPC](../screenshots/vpc/01-create-vpc-a.png)
+
+![](../screenshots/vpc/01-create-vpc-b.png)
+
+![](../screenshots/vpc/01-create-vpc-c.png)
 
 ---
 
@@ -79,6 +86,12 @@ Click **Add new subnet** before saving, then fill in the private one:
 
 > **Why two?** Public subnet = web servers (internet-reachable). Private subnet = databases, app servers (no direct internet). This separation is the foundation of secure cloud architecture. A `/24` gives you 256 addresses — AWS reserves 5, leaving 251 usable.
 
+
+![Create Subnets](../screenshots/vpc/02-create-subnets-a.png)
+
+![](../screenshots/vpc/02-create-subnets-b.png)
+
+![](../screenshots/vpc/02-create-subnets-c.png)
 ---
 
 ## Step 3 — Create and Attach an Internet Gateway
@@ -97,6 +110,17 @@ Actions → Attach to VPC → select lab-vpc → Attach internet gateway
 
 > ⚠️ **Common beginner mistake:** Creating the IGW is not enough. If you skip the attach step, nothing in your VPC can reach the internet.
 
+
+![Create Gateway](../screenshots/vpc/03-create-gateway-a.png)
+
+![](../screenshots/vpc/03-create-gateway-b.png)
+
+![Attach Gateway](../screenshots/vpc/04-attach-gateway-a.png)
+
+![](../screenshots/vpc/04-attach-gateway-b.png)
+
+![](../screenshots/vpc/04-attach-gateway-c.png)
+
 ---
 
 ## Step 4 — Create a Route Table and Add a Route
@@ -108,6 +132,14 @@ Actions → Attach to VPC → select lab-vpc → Attach internet gateway
 | Name | `lab-public-rt` |
 | VPC | `lab-vpc` |
 
+
+![Create Routing Table](../screenshots/vpc/05-create-routing-table-a.png)
+
+![](../screenshots/vpc/05-create-routing-table-b.png)
+
+![](../screenshots/vpc/05-create-routing-table-c.png)
+
+
 ### Add the internet route
 1. Click your new route table → **Routes** tab → **Edit routes** → **Add route**
 
@@ -117,10 +149,18 @@ Actions → Attach to VPC → select lab-vpc → Attach internet gateway
 
 2. Save routes.
 
+![Create Routes](../screenshots/vpc/05-create-routes.png)
+
+
 ### Associate with the public subnet
 `Subnet associations tab → Edit subnet associations → select lab-public-subnet → Save`
 
 > **This is what makes a subnet public.** The private subnet keeps the default route table (local traffic only). It is purely a routing decision — not a physical difference between the two subnets.
+
+
+![Create Associations](../screenshots/vpc/05-create-routes-associations-a.png)
+
+![](../screenshots/vpc/05-create-routes-associations-a.png)
 
 ---
 
@@ -148,6 +188,10 @@ Leave the default — **All traffic** outbound. Your instance needs internet acc
 
 > **Security concept — stateful firewall:** Security groups are stateful. Allowing inbound SSH automatically permits return traffic. You do not need an explicit outbound rule for established connections. This differs from NACLs, which are stateless (covered in Phase 2).
 
+![Create Security Groups](../screenshots/vpc/06-create-security-group-a.png)
+
+![](../screenshots/vpc/06-create-security-group-b.png)
+
 ---
 
 ## Step 6 — Launch an EC2 Instance Into Your VPC
@@ -163,6 +207,12 @@ Leave the default — **All traffic** outbound. Your instance needs internet acc
 
 > ⚠️ **Download the `.pem` file immediately.** You cannot download it again after creation. Store it somewhere safe.
 
+![Launch EC2 Instance](../screenshots/vpc/07-launch-ec2-instance-a.png)
+
+![](../screenshots/vpc/07-launch-ec2-instance-b.png)
+
+![](../screenshots/vpc/07-launch-ec2-instance-c.png)
+
 ### Network settings → Edit
 
 | Field | Value |
@@ -171,6 +221,8 @@ Leave the default — **All traffic** outbound. Your instance needs internet acc
 | Subnet | `lab-public-subnet` |
 | Auto-assign public IP | **Enable** |
 | Security group | Select existing → `lab-web-sg` |
+
+![](../screenshots/vpc/07-launch-ec2-instance-d.png)
 
 ### Advanced details → User data
 
