@@ -129,9 +129,9 @@ Create three users to simulate a team:
 
 | Username | Group | Purpose |
 |----------|-------|---------|
-| `dev-alice` | `lab-developers` | Simulates a developer |
-| `sec-bob` | `lab-security` | Simulates a security analyst |
-| `readonly-carol` | `lab-readonly` | Simulates an auditor |
+| `dev-willy` | `lab-developers` | Simulates a developer |
+| `sec-voke` | `lab-security` | Simulates a security analyst |
+| `readonly-josh` | `lab-readonly` | Simulates an auditor |
 
 For each user:
 - Enable **console access**
@@ -239,9 +239,9 @@ Your EC2 instance can now read from S3 without any hardcoded credentials. This i
 
 Testing confirms your policies actually work as intended.
 
-### Test as dev-alice
+### Test as dev-willy
 
-Log out → log back in as `dev-alice`
+Log out → log back in as `dev-willy`
 
 ```
 Try: EC2 → Launch instance         → should work
@@ -249,14 +249,26 @@ Try: IAM → Users                   → should be denied
 Try: S3 → Create bucket            → should work
 ```
 
-### Test as sec-bob
+![Launch instance](../screenshots/iam/08-dev-willy-launch-ec2-instance.png)
+
+![List Users](../screenshots/iam/08-dev-willy-list-users.png)
+
+![Create bucket](../screenshots/iam/08-dev-willy-create-s3-bucket.png)
+
+
+### Test as sec-voke
 
 ```
 Try: GuardDuty → view findings     → should work
 Try: EC2 → Terminate instance      → should be denied
 ```
 
-### Test as readonly-carol
+![Access GuardDuty](../screenshots/iam/to-be-included.png)
+
+![Terminate EC2 Instance](../screenshots/iam/08-sec-voke-terminate-ec2-instance.png)
+
+
+### Test as readonly-josh
 
 ```
 Try: EC2 → view instances          → should work
@@ -264,6 +276,15 @@ Try: EC2 → Launch instance         → should be denied
 Try: S3 → view buckets             → should work
 Try: S3 → Delete bucket            → should be denied
 ```
+
+![View EC2 Instances](../screenshots/iam/08-readonly-josh-view-ec2-instances.png)
+
+![Launch EC2 Instances](../screenshots/iam/08-readonly-josh-launch-ec2-instance.png)
+
+![View S3 Buckets](../screenshots/iam/08-readonly-josh-view-s3-buckets.png)
+
+![Delete S3 Buckets](../screenshots/iam/08-readonly-josh-delete-s3-buckets.png)
+
 
 > **Why test?** In security, untested controls are untrustworthy controls. Always verify your policies behave as intended — both the Allow and the Deny sides.
 
@@ -273,13 +294,13 @@ Try: S3 → Delete bucket            → should be denied
 
 Access keys allow programmatic access to AWS (CLI, scripts, automation).
 
-**Console path:** `IAM → Users → dev-alice → Security credentials → Create access key`
+**Console path:** `IAM → Users → dev-willy → Security credentials → Create access key`
 
 Select use case: **CLI**
 
 ```
-Access key ID:     AKIAIOSFODNN7EXAMPLE
-Secret access key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+Access key ID:     AKIAIOSFODNN7-EXAMPLE
+Secret access key: wJalrXUtnFEMI/K7MDENG/bPxRfiCY-EXAMPLE-KEY
 ```
 
 > ⚠️ **Access key security rules:**
@@ -311,7 +332,7 @@ Expected output:
 {
     "UserId": "AIDAIOSFODNN7EXAMPLE",
     "Account": "123456789012",
-    "Arn": "arn:aws:iam::123456789012:user/dev-alice"
+    "Arn": "arn:aws:iam::123456789012:user/dev-willy"
 }
 ```
 
