@@ -353,6 +353,10 @@ EC2 → Instances → select instance → Actions → Monitor and troubleshoot
 
 > Detailed monitoring costs ~$3.50/month per instance. For a lab, basic monitoring is sufficient. Enable detailed monitoring on production instances where fast anomaly detection matters.
 
+![Enable Monitoring](../screenshots/ec2/17-enable-detailed-monitoring-a.png)
+
+![Enable Monitoring](../screenshots/ec2/17-enable-detailed-monitoring-a.png)
+
 ---
 
 ## Step 9 — Get a System Log and Screenshot
@@ -363,6 +367,13 @@ Useful when an instance is unreachable:
 EC2 → Instances → Actions → Monitor and troubleshoot → Get system log
 EC2 → Instances → Actions → Monitor and troubleshoot → Get instance screenshot
 ```
+![Get System Log](../screenshots/ec2/18-get-system-log-a.png)
+
+![Get System Log](../screenshots/ec2/18-get-system-log-b.png)
+
+![Get System Screenshot](../screenshots/ec2/18-get-system-screenshots-a.png)
+
+![Get System Screenshot](../screenshots/ec2/18-get-system-screenshots-b.png)
 
 The system log shows console output from boot — invaluable for diagnosing failed user data scripts or kernel panics.
 
