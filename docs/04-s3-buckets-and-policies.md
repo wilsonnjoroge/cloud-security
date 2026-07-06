@@ -375,7 +375,7 @@ Bucket → Management → Replication rules → Create replication rule
 
 ```bash
 # Create a bucket
-aws s3 mb s3://my-bucket-name --region us-east-1
+aws s3 mb s3://my-bucket-name --region us-east-1 
 
 # Sync a local folder to S3
 aws s3 sync ./local-folder s3://my-bucket-name/remote-folder/
