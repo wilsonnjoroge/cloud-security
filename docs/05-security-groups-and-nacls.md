@@ -1,4 +1,4 @@
-# 🔥 Security Groups & NACLs — Network Access Control
+# 🔥 Security Groups & NACLs: Network Access Control
 
 > **Phase 1 · Document 5 of 29**  
 > **Estimated cost:** Free · **Estimated time:** 45–60 minutes  
@@ -23,16 +23,16 @@ Internet
 [ EC2 Instance ]
 ```
 
-> **Security principle — defense in depth:** Two independent layers mean an attacker must bypass both. A misconfigured security group does not automatically expose an instance if the NACL is also blocking traffic.
+> **Security principle  - defense in depth:** Two independent layers mean an attacker must bypass both. A misconfigured security group does not automatically expose an instance if the NACL is also blocking traffic.
 
 ---
 
-## Security Groups vs NACLs — Key Differences
+## Security Groups vs NACLs : Key Differences
 
 | Feature | Security Group | NACL |
 |---------|---------------|------|
 | Applied to | EC2 instance (ENI) | Subnet |
-| Stateful? | Yes — return traffic automatic | No — must explicitly allow both directions |
+| Stateful? | Yes: return traffic automatic | No: must explicitly allow both directions |
 | Rules | Allow only | Allow and Deny |
 | Rule evaluation | All rules evaluated | Rules evaluated in number order, first match wins |
 | Default | Deny all inbound, allow all outbound | Allow all inbound and outbound |
@@ -40,24 +40,33 @@ Internet
 
 ---
 
-## Part 1 — Security Groups
+## Part 1: Security Groups
 
-### Step 1 — Understand the Default Security Group
+### Step 1: Understand the Default Security Group
 
 Every VPC has a default security group. Look at it:
 
 ```
-EC2 → Security Groups → find the one named "default" in lab-vpc
+EC2 → Security Groups → find the one named "default" in lab1-vpc
 ```
 
+![Default Security Group](../screenshots/security-groups-and-nacls/01-default-security-group-a.png)
+
+
 Inbound rules: allows all traffic **from other instances in the same security group**.  
+
+![Default Security Group](../screenshots/security-groups-and-nacls/01-default-security-group-inbound.png)
+
 Outbound rules: allows all traffic to anywhere.
+
+![Default Security Group](../screenshots/security-groups-and-nacls/01-default-security-group-outbound.png)
+
 
 > **Never use the default security group for your instances.** Always create purpose-built security groups with minimal rules. The default SG is a common misconfiguration that allows lateral movement between instances.
 
 ---
 
-### Step 2 — Create Purpose-Built Security Groups
+### Step 2: Create Purpose-Built Security Groups
 
 **Console path:** `EC2 → Security Groups → Create security group`
 
@@ -65,9 +74,9 @@ Outbound rules: allows all traffic to anywhere.
 
 | Field | Value |
 |-------|-------|
-| Name | `sg-web-server` |
-| Description | `Public web server — HTTP and HTTPS only` |
-| VPC | `lab-vpc` |
+| Name | `lab1-web-server-sg` |
+| Description | `Public web server: HTTP and HTTPS only` |
+| VPC | `lab1-vpc` |
 
 Inbound rules:
 
@@ -79,105 +88,142 @@ Inbound rules:
 
 Outbound rules: leave default (all traffic).
 
+![Web Security Group](../screenshots/security-groups-and-nacls/02-create-security-groups-web-server.png)
+
+
 #### App server SG
 
 | Field | Value |
 |-------|-------|
-| Name | `sg-app-server` |
-| Description | `App tier — only accessible from web tier` |
-| VPC | `lab-vpc` |
+| Name | `lab1-app-server-sg` |
+| Description | `App tier only accessible from web tier` |
+| VPC | `lab1-vpc` |
 
 Inbound rules:
 
 | Type | Port | Source | Reason |
 |------|------|--------|--------|
-| Custom TCP | 8080 | `sg-web-server` | Only web servers can reach app servers |
+| Custom TCP | 8080 | `lab1-web-server-sg` | Only web servers can reach app servers |
 
-> **This is referencing a security group as a source** — not an IP range. Any instance with `sg-web-server` attached can reach this instance on port 8080. This is more secure than IP-based rules because it adapts automatically as instances are added or removed.
+![App Security Group](../screenshots/security-groups-and-nacls/02-create-security-groups-app-server.png)
+
+> **This is referencing a security group as a source**: not an IP range. Any instance with `lab1-web-server-sg` attached can reach this instance on port 8080. This is more secure than IP-based rules because it adapts automatically as instances are added or removed.
 
 #### Database SG
 
 | Field | Value |
 |-------|-------|
-| Name | `sg-database` |
-| Description | `Database tier — only accessible from app tier` |
-| VPC | `lab-vpc` |
+| Name | `lab1-database-sg` |
+| Description | `Database tier only accessible from app tier` |
+| VPC | `lab1-vpc` |
 
 Inbound rules:
 
 | Type | Port | Source | Reason |
 |------|------|--------|--------|
-| MySQL/Aurora | 3306 | `sg-app-server` | Only app servers can reach the DB |
+| MySQL/Aurora | 3306 | `lab1-app-server-sg` | Only app servers can reach the DB |
+
+![Database Security Group](../screenshots/security-groups-and-nacls/02-create-security-groups-database.png)
 
 > This creates a tiered security architecture: Internet → Web (port 80/443) → App (port 8080) → Database (port 3306). Each layer can only talk to the layer directly adjacent to it.
 
 ---
 
-### Step 3 — Security Group Chaining Diagram
+### Step 3: Security Group Chaining Diagram
 
+The Network setup (VPC and routings)
 ```
-Internet
-    │  port 80/443
-    ▼
-┌──────────────┐
-│  sg-web-server│  ← public-facing
-└──────┬───────┘
-       │  port 8080 (only from sg-web-server)
-       ▼
-┌──────────────┐
-│ sg-app-server │  ← private subnet
-└──────┬───────┘
-       │  port 3306 (only from sg-app-server)
-       ▼
-┌──────────────┐
-│  sg-database  │  ← private subnet
-└──────────────┘
+                 Internet
+                     │
+            Internet Gateway
+                     │
+        ┌──────────────────────────────┐
+        │ Public Subnet                │
+        │                              │
+        │ EC2 Web Server               │
+        │ Security Group:              │
+        │ lab1-web-server-sg           │
+        └──────────────┬───────────────┘
+                       │
+                  Private IP
+                       │
+        ┌──────────────────────────────┐
+        │ Private Subnet               │
+        │                              │
+        │ EC2 App Server               │
+        │ Security Group:              │
+        │ lab1-app-server-sg           │
+        └──────────────┬───────────────┘
+                       │
+                  Private IP
+                       │
+        ┌──────────────────────────────┐
+        │ Private Subnet               │
+        │                              │
+        │ EC2 Database                 │
+        │ Security Group:              │
+        │ lab1-database-sg             │
+        └──────────────────────────────┘
 ```
 
-This architecture means even if the web server is compromised, the attacker cannot directly reach the database — they must first pivot through the app server.
+
+![VPC and Routing for Lab 1](../screenshots/security-groups-and-nacls/03-vpc-configuration-and-routing.png)
+
+
+> This architecture means even if the web server is compromised, the attacker cannot directly reach the database they must first pivot through the app server.
+> 
+> **Important:** Security Groups are attached to **EC2 instances (their Elastic Network Interfaces)**, **not** to subnets. The subnets themselves are protected by **Network ACLs (NACLs)**.
+>
 
 ---
 
-### Step 4 — Security Group Rules for Forensics Tools
+### Step 4: Security Group Rules for Forensics Tools
 
 For a forensic analysis instance:
 
 | Type | Port | Source | Reason |
 |------|------|--------|--------|
 | SSH | 22 | Your IP | Remote access for analyst |
-| Custom TCP | 9200 | `sg-app-server` | Elasticsearch access (log analysis) |
+| Custom TCP | 9200 | `lab1-app-server-sg` | Elasticsearch access (log analysis) |
 | RDP | 3389 | Your IP | Windows forensic tools |
 
 ---
 
-### Step 5 — Test Security Group Rules
+### Step 5: Test Security Group Rules
 
-Launch two instances in `lab-public-subnet`:
-- Instance A with `sg-web-server`
-- Instance B with `sg-app-server`
+Launch two instances:
+ 
+- Web Server (`lab1-web-server`) in `lab1-public-subnet` using `lab1-web-server-sg`
 
-From instance A, try to reach instance B on port 8080:
+![Web Server](../screenshots/security-groups-and-nacls/04-lab1-web-server.png)
+
+- App Server (`lab1-app-server`) in `lab1-private-subnet` using `lab1-app-server-sg`
+
+![Web Server](../screenshots/security-groups-and-nacls/04-lab1-app-server.png)
+
+
+From the Web Server, test connectivity to the App Server using its private IP:
 
 ```bash
-# From instance A — should succeed (sg-web-server is the source rule)
-curl http://<instance-B-private-ip>:8080
+# Should succeed (allowed by Security Group reference)
+curl http://<app-server-private-ip>:8080
 
-# From instance A — should fail (port 3306 not allowed from web tier)
-nc -zv <instance-B-private-ip> 3306
+# Should fail (no rule allows port 3306)
+nc -zv <app-server-private-ip> 3306
 ```
 
 > **Important:** Always test both Allow and Deny cases. A security control you haven't tested blocking is one you can't trust.
 
 ---
 
-## Part 2 — Network ACLs (NACLs)
+## Part 2: Network ACLs (NACLs)
 
-NACLs operate at the subnet level. They evaluate rules in order — lowest number first — and stop at the first match.
+NACLs operate at the subnet level. They evaluate rules in order: lowest number first: and stop at the first match.
 
-### Step 6 — Examine the Default NACL
+### Step 6: Examine the Default NACL
 
 ```
-VPC → Network ACLs → find the one associated with lab-vpc
+VPC → Network ACLs → find the one associated with lab1-vpc
 ```
 
 Default rules:
@@ -186,18 +232,18 @@ Default rules:
 - Outbound rule 100: Allow all traffic to anywhere
 - Outbound rule *: Deny all (catch-all)
 
-The default NACL allows everything — it does not restrict traffic at all.
+The default NACL allows everything: it does not restrict traffic at all.
 
 ---
 
-### Step 7 — Create a Custom NACL
+### Step 7: Create a Custom NACL
 
 **Console path:** `VPC → Network ACLs → Create network ACL`
 
 | Field | Value |
 |-------|-------|
 | Name | `nacl-public` |
-| VPC | `lab-vpc` |
+| VPC | `lab1-vpc` |
 
 A new NACL starts with **Deny all** on both inbound and outbound. You must explicitly add Allow rules.
 
@@ -211,7 +257,7 @@ A new NACL starts with **Deny all** on both inbound and outbound. You must expli
 | 130 | Custom TCP | 1024–65535 | `0.0.0.0/0` | Allow |
 | * | All traffic | All | `0.0.0.0/0` | Deny |
 
-> **Why rule 130?** NACLs are stateless. When your instance responds to an HTTP request, the response goes back on an ephemeral port (1024–65535). You must explicitly allow this return traffic inbound — unlike security groups which handle this automatically.
+> **Why rule 130?** NACLs are stateless. When your instance responds to an HTTP request, the response goes back on an ephemeral port (1024–65535). You must explicitly allow this return traffic inbound: unlike security groups which handle this automatically.
 
 #### Outbound rules
 
@@ -225,14 +271,14 @@ A new NACL starts with **Deny all** on both inbound and outbound. You must expli
 Associate with subnet:
 
 ```
-Subnet associations → Edit subnet associations → select lab-public-subnet
+Subnet associations → Edit subnet associations → select lab1-public-subnet
 ```
 
 ---
 
-### Step 8 — Use NACLs to Block a Specific IP
+### Step 8: Use NACLs to Block a Specific IP
 
-This is a common incident response action — block an attacker's IP at the network level:
+This is a common incident response action: block an attacker's IP at the network level:
 
 ```
 VPC → Network ACLs → nacl-public → Inbound rules → Edit
@@ -247,7 +293,7 @@ Add rule:
 
 ---
 
-## Security Groups vs NACLs — When to Use Each
+## Security Groups vs NACLs: When to Use Each
 
 | Scenario | Use |
 |----------|-----|
@@ -309,7 +355,7 @@ aws ec2 describe-network-acls --filters "Name=vpc-id,Values=vpc-xxxxxxxx"
 ## Cleanup
 
 ```
-1. Delete custom security groups (sg-web-server, sg-app-server, sg-database)
+1. Delete custom security groups (lab1-web-server-sg, lab1-app-server-sg, sg-database)
    Note: cannot delete a SG that is still attached to an instance
 2. Delete nacl-public
    Note: must disassociate from subnets first
