@@ -197,9 +197,14 @@ Launch two instances:
 
 ![Web Server](../screenshots/security-groups-and-nacls/04-lab1-web-server.png)
 
-- App Server (`lab1-app-server`) in `lab1-private-subnet` using `lab1-app-server-sg`
+- App Server (`lab1-app-server`) in `lab1-private-subnet` using `lab1-app-server-sg`.
 
-![Web Server](../screenshots/security-groups-and-nacls/04-lab1-app-server.png)
+
+> Ensure the app server is in the private subnet, no public IP assigned and that it can connect with the ssm session manager
+
+![App Server](../screenshots/security-groups-and-nacls/04-lab1-app-server.png)
+
+![App Server - Confirm Service](../screenshots/security-groups-and-nacls/04-lab1-app-server.png)
 
 
 From the Web Server, test connectivity to the App Server using its private IP:
@@ -211,6 +216,11 @@ curl http://<app-server-private-ip>:8080
 # Should fail (no rule allows port 3306)
 nc -zv <app-server-private-ip> 3306
 ```
+
+![Curl test](../screenshots/security-groups-and-nacls/05-test-security-group-riles-curl-8080.png)
+
+![nc test](../screenshots/security-groups-and-nacls/05-test-security-group-riles-nc-3306.png)
+
 
 > **Important:** Always test both Allow and Deny cases. A security control you haven't tested blocking is one you can't trust.
 
@@ -234,6 +244,12 @@ Default rules:
 
 The default NACL allows everything: it does not restrict traffic at all.
 
+![Default NACL Rules](../screenshots/security-groups-and-nacls/06-nacl-default-a.png)
+
+![Default NACL Inbound Rules](../screenshots/security-groups-and-nacls/06-nacl-default-inbound-rules.png)
+
+![Default NACL Outbound Rules](../screenshots/security-groups-and-nacls/06-nacl-default-outbound-rules.png)
+
 ---
 
 ### Step 7: Create a Custom NACL
@@ -247,6 +263,11 @@ The default NACL allows everything: it does not restrict traffic at all.
 
 A new NACL starts with **Deny all** on both inbound and outbound. You must explicitly add Allow rules.
 
+![Create Custom NACL](../screenshots/security-groups-and-nacls/07-create-a-custom-nacl-a.png)
+
+![Create Custom NACL](../screenshots/security-groups-and-nacls/07-create-a-custom-nacl-b.png)
+
+
 #### Inbound rules
 
 | Rule # | Type | Port | Source | Allow/Deny |
@@ -256,6 +277,10 @@ A new NACL starts with **Deny all** on both inbound and outbound. You must expli
 | 120 | SSH | 22 | Your IP `/32` | Allow |
 | 130 | Custom TCP | 1024–65535 | `0.0.0.0/0` | Allow |
 | * | All traffic | All | `0.0.0.0/0` | Deny |
+
+![Create Custom NACL Inbound Rules](../screenshots/security-groups-and-nacls/08-edit-inbound-rule-a.png)
+
+![Create Custom NACL Inbound Rules](../screenshots/security-groups-and-nacls/08-edit-inbound-rule-b.png)
 
 > **Why rule 130?** NACLs are stateless. When your instance responds to an HTTP request, the response goes back on an ephemeral port (1024–65535). You must explicitly allow this return traffic inbound: unlike security groups which handle this automatically.
 
@@ -268,11 +293,19 @@ A new NACL starts with **Deny all** on both inbound and outbound. You must expli
 | 120 | Custom TCP | 1024–65535 | `0.0.0.0/0` | Allow |
 | * | All traffic | All | `0.0.0.0/0` | Deny |
 
+![Create Custom NACL Outbound Rules](../screenshots/security-groups-and-nacls/08-edit-outbound-rule-a.png)
+
+![Create Custom NACL Outbound Rules](../screenshots/security-groups-and-nacls/08-edit-outbound-rule-b.png)
+
+
 Associate with subnet:
 
 ```
 Subnet associations → Edit subnet associations → select lab1-public-subnet
 ```
+![Associate To Subnet](../screenshots/security-groups-and-nacls/09-associate-to-public-subnet-a.png)
+
+![Associate To Subnet](../screenshots/security-groups-and-nacls/09-associate-to-public-subnet-b.png)
 
 ---
 
@@ -288,6 +321,7 @@ Add rule:
   Source:    <attacker-ip>/32
   Action:    Deny
 ```
+![Block Ip with NACL](../screenshots/security-groups-and-nacls/10-block-traffic-from-specific-ip-using-nacl-a.png)
 
 > Rule 90 is evaluated before rule 100 (HTTP Allow). The attacker's traffic is denied before it can reach your instance, even if the security group would otherwise allow it.
 
