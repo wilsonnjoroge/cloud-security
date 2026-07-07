@@ -258,7 +258,7 @@ The default NACL allows everything: it does not restrict traffic at all.
 
 | Field | Value |
 |-------|-------|
-| Name | `nacl-public` |
+| Name | `lab1-nacl-public` |
 | VPC | `lab1-vpc` |
 
 A new NACL starts with **Deny all** on both inbound and outbound. You must explicitly add Allow rules.
@@ -314,7 +314,7 @@ Subnet associations → Edit subnet associations → select lab1-public-subnet
 This is a common incident response action: block an attacker's IP at the network level:
 
 ```
-VPC → Network ACLs → nacl-public → Inbound rules → Edit
+VPC → Network ACLs → lab1-nacl-public → Inbound rules → Edit
 Add rule:
   Rule #:    90   (lower number = evaluated first)
   Type:      All traffic
@@ -391,7 +391,7 @@ aws ec2 describe-network-acls --filters "Name=vpc-id,Values=vpc-xxxxxxxx"
 ```
 1. Delete custom security groups (lab1-web-server-sg, lab1-app-server-sg, sg-database)
    Note: cannot delete a SG that is still attached to an instance
-2. Delete nacl-public
+2. Delete lab1-nacl-public
    Note: must disassociate from subnets first
 ```
 
