@@ -5,11 +5,13 @@
 
 An enterprise-grade AWS environment built from scratch, following the AWS Well-Architected Framework: network, identity, compute, detection, forensics, and offensive validation modeled on a fictional PCI-DSS fintech, **AcmeFintech Ltd.**
 
+ ![Status](https://img.shields.io/badge/status-in--progress-orange) ![Cloud](https://img.shields.io/badge/cloud-AWS-FF9900) ![Focus](https://img.shields.io/badge/focus-Cloud%20Security%20%7C%20DFIR-blue) ![Certification](https://img.shields.io/badge/target-AWS%20Certified%20Security%20--%20Specialty-232F3E)   
+
 ---
 
 ## About This Project
 
-This repository documents the design, build, hardening, detection, incident response, and adversarial testing of a realistic multi-tier AWS environment. It's structured as a 29-document, four-phase roadmap moving from foundational architecture through detection engineering and incident response to offensive validation — culminating in a capstone that runs the full lifecycle end to end: build → attack → detect → respond → investigate.
+This repository documents the design, build, hardening, detection, incident response, and adversarial testing of a realistic multi-tier AWS environment. It's structured as a 29-document, four-phase roadmap moving from foundational architecture through detection engineering and incident response to offensive validation culminating in a capstone that runs the full lifecycle end to end: **build → attack → detect → respond → investigate.**
 
 Every decision in this build is made against two questions:
 
@@ -18,7 +20,7 @@ Every decision in this build is made against two questions:
 
 This is a simulation of enterprise cloud security engineering, built to validate hands-on capability against the **AWS Certified Security – Specialty** exam and to demonstrate applied **cloud DFIR** competency.
 
-The build is also documented publicly as a 30-Day AWS Well-Architected LinkedIn series, sharing architecture decisions and enterprise risk framing for practitioners pursuing the same certification.
+The build is also documented publicly as a **30-Day AWS Well-Architected LinkedIn series**, sharing architecture decisions and enterprise risk framing for practitioners pursuing the same certification.
 
 ---
 
@@ -38,10 +40,9 @@ The build is also documented publicly as a 30-Day AWS Well-Architected LinkedIn 
 
 ## Author
 
-#### **Wilson Njoroge Wanderi, MSc, CCEP, CC, KCNA, ITIL®4**
-**Middleware Engineering Specialist | Cloud Security Specialist (AWS)**
-**MSc Cybersecurity & Digital Forensics: Open University of Kenya**
-
+**Name:** Wilson Njoroge Wanderi, MSc, CCEP, CC, KCNA, ITIL®4  
+**Area of Expertise:** Middleware Engineering Specialist, Cloud Security Specialist (AWS)  
+**Education:** MSc Cybersecurity & Digital Forensics: Open University of Kenya  
 **Research focus:** Behavioural anomaly detection at API integration boundaries in Tier-1 commercial banking environments.
 
 ---
@@ -95,6 +96,12 @@ The build is also documented publicly as a 30-Day AWS Well-Architected LinkedIn 
 
 Full architecture rationale: [`27-enterprise-architecture-overview`](docs/27-enterprise-architecture-overview.md)
 
+---
+
+## Tech Stack
+
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonaws&logoColor=white) ![VPC](https://img.shields.io/badge/VPC-8C4FFF?style=flat&logo=amazonaws&logoColor=white) ![IAM](https://img.shields.io/badge/IAM-DD344C?style=flat&logo=amazoniam&logoColor=white) ![EC2](https://img.shields.io/badge/EC2-FF9900?style=flat&logo=amazonec2&logoColor=white) ![S3](https://img.shields.io/badge/S3-569A31?style=flat&logo=amazons3&logoColor=white) ![RDS](https://img.shields.io/badge/RDS-527FFF?style=flat&logo=amazonrds&logoColor=white) ![KMS](https://img.shields.io/badge/KMS-DD344C?style=flat&logo=amazonaws&logoColor=white) ![Secrets Manager](https://img.shields.io/badge/Secrets_Manager-DD344C?style=flat&logo=amazonaws&logoColor=white) ![CloudTrail](https://img.shields.io/badge/CloudTrail-232F3E?style=flat&logo=amazonaws&logoColor=white) ![CloudWatch](https://img.shields.io/badge/CloudWatch-FF4F8B?style=flat&logo=amazoncloudwatch&logoColor=white) ![GuardDuty](https://img.shields.io/badge/GuardDuty-DD344C?style=flat&logo=amazonaws&logoColor=white) ![Security Hub](https://img.shields.io/badge/Security_Hub-DD344C?style=flat&logo=amazonaws&logoColor=white)![AWS Config](https://img.shields.io/badge/AWS_Config-232F3E?style=flat&logo=amazonaws&logoColor=white) ![WAF](https://img.shields.io/badge/WAF-DD344C?style=flat&logo=amazonaws&logoColor=white) ![SSM](https://img.shields.io/badge/Session_Manager-232F3E?style=flat&logo=amazonaws&logoColor=white) ![CloudGoat](https://img.shields.io/badge/CloudGoat-000000?style=flat&logo=github&logoColor=white) ![Pacu](https://img.shields.io/badge/Pacu-000000?style=flat&logo=github&logoColor=white) ![Volatility](https://img.shields.io/badge/Volatility-2E2E2E?style=flat) ![Sleuthkit](https://img.shields.io/badge/Sleuthkit-2E2E2E?style=flat) ![FTK Imager](https://img.shields.io/badge/FTK_Imager-2E2E2E?style=flat) ![LiME](https://img.shields.io/badge/LiME-2E2E2E?style=flat)
+
 --- 
 
 ### Why This Structure
@@ -104,7 +111,7 @@ Each document builds on identity, network, or compute infrastructure established
 - **Network** provides the segmented environment everything else runs inside.
 - **Identity** is provisioned before compute, so no resource ever runs without correct, least-privilege permissions attached.
 - **Compute** fuses network and identity: every EC2 instance is placed into pre-built subnets and assumes pre-built roles, never hardcoded credentials.
-- **Storage, detection, and logging** extend this same environment, so that when something goes wrong, the evidence to investigate it already exists — forensic readiness is treated as an architecture decision, not an afterthought.
+- **Storage, detection, and logging** extend this same environment, so that when something goes wrong, the evidence to investigate it already exists forensic readiness is treated as an architecture decision, not an afterthought.
 - **Offensive validation** confirms the controls actually hold under realistic attack conditions, not just on paper.
 - **The capstone** runs all of the above together against one realistic enterprise environment.
 
@@ -203,11 +210,13 @@ This table is the single source of truth for build progress.
 
 The capstone (Docs 27–29) is the point at which every prior phase converges into one realistic, attackable, and investigable environment:
 
-- **Doc 27 — Enterprise Architecture Overview**: defines the full AcmeFintech Ltd environment — multi-tier VPC, bastion access pattern, isolated security/forensics subnet, IAM structure across five roles and four groups, and a complete PCI DSS control mapping.
-- **Doc 28 — Building the Environment Step-by-Step**: walks through provisioning the entire architecture in sequence, reusing and extending every pattern established in Phases 1–4.
-- **Doc 29 — Attack-Detect-Respond Simulation**: runs a live, realistic attack chain (IAM privilege escalation → data exfiltration → resource abuse) against the built environment, validates detection via GuardDuty/Security Hub, and walks through the full incident response and investigation process.
+- **Doc 27 Enterprise Architecture Overview**: defines the full AcmeFintech Ltd environment multi-tier VPC, bastion access pattern, isolated security/forensics subnet, IAM structure across five roles and four groups, and a complete PCI DSS control mapping.
+- **Doc 28 Building the Environment Step-by-Step**: walks through provisioning the entire architecture in sequence, reusing and extending every pattern established in Phases 1–4.
+- **Doc 29 Attack-Detect-Respond Simulation**: runs a live, realistic attack chain (IAM privilege escalation → data exfiltration → resource abuse) against the built environment, validates detection via GuardDuty/Security Hub, and walks through the full incident response and investigation process.
 
 **Estimated capstone cost:** $15–25, run for 1–2 days then torn down.
+
+---
 
 **Fictional company profile:**
 
@@ -224,11 +233,11 @@ The capstone (Docs 27–29) is the point at which every prior phase converges in
 ## Prerequisites Checklist (from Doc 27)
 
 **Phase 1**
-- [ ] Build a VPC from scratch (console and CLI)
-- [ ] Understand IAM users, groups, roles, policies
-- [ ] Know EC2 lifecycle and storage
-- [ ] Know S3 bucket policies and security
-- [ ] Know security groups and NACL differences
+- [x] Build a VPC from scratch (console and CLI)
+- [x] Understand IAM users, groups, roles, policies
+- [x] Know EC2 lifecycle and storage
+- [x] Know S3 bucket policies and security
+- [x] Know security groups and NACL differences
 - [ ] Have CloudTrail and CloudWatch running
 
 **Phase 2**
@@ -254,21 +263,6 @@ The capstone (Docs 27–29) is the point at which every prior phase converges in
 - [ ] Know the IMDS attack and enforce IMDSv2
 - [ ] Know S3 misconfiguration attack patterns
 - [ ] Use Pacu for enumeration
-
----
-
-## What's Built So Far (Evidence)
-
-- **VPC**: public/private subnets, IGW, route tables, security groups scoped to least privilege — Evidence: `screenshots/vpc/`
-- **IAM**: users, groups, roles; custom least-privilege policy scoped to `lab-*` resources; role-based access tested per user (dev, security, read-only) — Evidence: `screenshots/iam/`
-- **EC2**: instance in the public subnet, IAM role attached, IMDSv2 enforced, EBS provisioned/snapshotted, Elastic IP assigned, detailed monitoring, system log/screenshot retrieval — Evidence: `screenshots/ec2/`
-- **S3**: bucket created, versioning enabled and tested, public access blocked, HTTPS-only policy, scoped user policy, server access logging enabled and verified, lifecycle policy, presigned URL generation — Evidence: `screenshots/s3/`
-
----
-
-## Tech Stack
-
-AWS VPC · IAM · EC2 · S3 · RDS · KMS · Secrets Manager · CloudTrail · CloudWatch · GuardDuty · Security Hub · AWS Config · WAF · Session Manager (SSM) · CloudGoat · Pacu · Volatility · Sleuthkit · FTK Imager · LiME
 
 ---
 
