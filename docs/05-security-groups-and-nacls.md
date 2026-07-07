@@ -193,11 +193,11 @@ For a forensic analysis instance:
 
 Launch two instances:
  
-- Web Server (`lab1-web-server`) in `lab1-public-subnet` using `lab1-web-server-sg`
+- **Web Server** (`lab1-web-server`) in `lab1-public-subnet` using `lab1-web-server-sg`
 
 ![Web Server](../screenshots/security-groups-and-nacls/04-lab1-web-server.png)
 
-- App Server (`lab1-app-server`) in `lab1-private-subnet` using `lab1-app-server-sg`.
+- **App Server** (`lab1-app-server`) in `lab1-private-subnet` using `lab1-app-server-sg`.
 
 
 > Ensure the app server is in the private subnet, no public IP assigned and that it can connect with the ssm session manager
@@ -207,7 +207,92 @@ Launch two instances:
 ![App Server - Confirm Service](../screenshots/security-groups-and-nacls/04-lab1-app-server.png)
 
 
-From the Web Server, test connectivity to the App Server using its private IP:
+**App Server Connectivity: Private Subnet, No NAT**
+
+Since the app server has no public IP and no NAT Gateway, standard SSH access
+is impossible, there's no route in. Use **SSM Session Manager** instead,
+which needs its own connectivity fix first.
+
+**Why the SSM Agent needs help**
+
+With no public IP and no NAT Gateway, the app server has no path to the
+internet at all, and SSM's control plane (`ssm`, `ssmmessages`,
+`ec2messages`) lives outside your VPC by default. 
+
+Without a route, the agent shows as **offline**, not a security group or NACL problem, just no path out.
+
+**Fix: Three VPC Interface Endpoints**
+
+Create these in the private subnet before testing SSM:
+
+| Endpoint | Service name |
+|---|---|
+| SSM | `com.amazonaws.<region>.ssm` |
+| SSM Messages | `com.amazonaws.<region>.ssmmessages` |
+| EC2 Messages | `com.amazonaws.<region>.ec2messages` |
+
+For each: 
+```
+**VPC → Endpoints → Create endpoint**
+```
+**Type:** AWS services
+**Search** the service name
+**VPC:** `lab1-vpc`
+**Subnet:** the private subnet
+**Enable Private DNS name** (critical; without it, the agent still tries the public hostname)
+**Security group:** A dedicated `lab1-vpc-endpoints-sg` 
+**Allowing inbound 443 from `lab1-app-server-sg`:** Not the app server's own SG attached directly. It has no rule permitting itself in on 443).
+
+This keeps the subnet genuinely private: no `0.0.0.0/0` route, no NAT
+Gateway cost, and SSM traffic never touches the public internet.
+
+**Launch the app server accordingly**
+
+- Subnet: private subnet, auto-assign public IP **disabled**
+- IAM role: attach `AmazonSSMManagedInstanceCore` at launch
+- Security group: `lab1-app-server-sg` (as defined in Step 2) — no inbound
+  SSH rule needed at all, since SSM replaces it
+- User data: wrap the test listener in systemd so it survives reboot:
+
+```bash
+#!/bin/bash
+cat << 'EOF' > /etc/systemd/system/app-server.service
+[Unit]
+Description=Simple test HTTP listener on 8080
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 -m http.server 8080
+Restart=always
+User=ec2-user
+WorkingDirectory=/home/ec2-user
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable app-server
+systemctl start app-server
+```
+
+A raw `python3 -m http.server 8080` in user data would die the moment the
+instance reboots, user data only runs once, at first boot. systemd makes
+the listener durable.
+
+**Connect and verify**
+
+```bash
+aws ssm start-session --target <app-server-instance-id>
+sudo systemctl status app-server
+sudo ss -tulnp | grep 8080   # confirm 0.0.0.0:8080, not 127.0.0.1:8080
+```
+
+If the instance shows offline: confirm all three endpoints exist with the
+correct security group, then `sudo systemctl restart amazon-ssm-agent` if
+the IAM role was attached after launch rather than at launch.
+
+
+#### From the Web Server, test connectivity to the App Server using its private IP:
 
 ```bash
 # Should succeed (allowed by Security Group reference)
