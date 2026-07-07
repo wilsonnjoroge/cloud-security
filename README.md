@@ -1,582 +1,272 @@
-# ☁️ AWS Cloud Security Lab
+# AWS Cybersecurity & Digital Forensics Capstone
 
-**Phase 5 of 6 — Security Lifecycle Portfolio**
-**Focus:** Cloud infrastructure security — identity, network segmentation, data protection, logging, monitoring, and threat detection on AWS.
-**Approach:** Layered, architect-level implementation — every control exists for a documented reason, every detection is validated, every decision maps to a real-world threat it mitigates.
+**An enterprise-grade AWS environment built from scratch, following the AWS Well-Architected Framework: network, identity, compute, detection, forensics, and offensive validation, modeled on a fictional PCI-DSS fintech: AcmeFintech Ltd.**
 
----
-
-## Why This Lab Exists
-
-Most cloud tutorials teach you to *launch* things. This lab teaches you to *secure* them.
-
-The gap between "I launched an EC2 instance" and "I understand how cloud environments get compromised" is where this project lives. AWS breaches do not happen because attackers are clever — they happen because:
-
-- IAM policies are too permissive and an overprivileged credential gets stolen
-- S3 buckets are misconfigured and data is publicly readable without the owner knowing
-- CloudTrail is not enabled, so there is no record of what happened after the breach
-- Security groups allow 0.0.0.0/0 on sensitive ports because "it was easier"
-- No one is watching — no alarms fire, no one investigates, the attacker dwells for months
-
-This lab implements — and documents — the controls that prevent each of those outcomes. It is structured around the same layered security model used in real AWS production environments.
+![Status](https://img.shields.io/badge/status-in--progress-orange)
+![Cloud](https://img.shields.io/badge/cloud-AWS-FF9900)
+![Focus](https://img.shields.io/badge/focus-Cloud%20Security%20%7C%20DFIR-blue)
+![Certification](https://img.shields.io/badge/target-AWS%20Certified%20Security%20--%20Specialty-232F3E)
 
 ---
 
-## Architecture Philosophy
+## About This Project
 
-Every design decision in this lab follows five principles. Understanding them is more important than memorising the steps.
+This repository documents the design, build, hardening, detection, incident response, and adversarial testing of a realistic multi-tier AWS environment. It is structured as a **29-document, four-phase roadmap**, moving from foundational architecture through detection engineering and incident response, to offensive validation: culminating in a capstone that runs the full lifecycle end to end: **build -> attack -> detect -> respond -> investigate.**
 
-**Zero Trust** — no principal (human user, application, or service) is trusted by default. Every identity must authenticate, must be explicitly authorised for what it needs, and must not carry permissions beyond that scope. There are no wildcard permissions in this lab.
+Every decision in this build is made against two questions:
 
-**Defence in Depth** — security at every layer independently. Network controls do not depend on IAM being correct. Logging does not depend on the network being secure. If one layer is bypassed, the next one catches it. An attacker who gets past the security group still hits OS-level controls. An attacker who compromises a credential still cannot delete audit logs.
+1. Does this reduce the attack surface, in line with the AWS Well-Architected Framework's security pillar?
+2. If this control fails, does the environment produce the evidence needed to investigate what happened?
 
-**Least Privilege** — the single most violated principle in real AWS environments. Every IAM user, role, and policy in this lab is scoped to exactly what is needed and nothing more. No `"Action": "s3:*"`. No `"Resource": "*"` without justification.
+This is not a tutorial exercise. It is a deliberate simulation of enterprise cloud security engineering, built to validate hands-on capability against the **AWS Certified Security - Specialty** exam and to demonstrate applied cloud DFIR competency.
 
-**Immutable Audit Trail** — every API call, every login, every configuration change is logged. Logs are encrypted, versioned, and protected against deletion. You can reconstruct exactly what happened, who did it, and when — from any region.
-
-**Separation of Duties** — the identity that deploys infrastructure is not the same identity that can modify audit logs. The developer cannot touch IAM. The auditor can read everything but change nothing.
-
----
-
-## Full Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     AWS Account                             │
-│                                                             │
-│  Layer 1: IAM & Identity                                    │
-│  ├── Root account (locked, MFA only)                        │
-│  ├── admin-wilson     (admin, MFA enforced)                 │
-│  ├── developer-user   (EC2 + S3 only, permission boundary)  │
-│  └── readonly-auditor (read-only, no change rights)         │
-│                                                             │
-│  Layer 2: Network (VPC 10.0.0.0/16)                         │
-│  ├── Public Subnet  10.0.1.0/24  → Bastion host             │
-│  └── Private Subnet 10.0.2.0/24  → Application EC2         │
-│       (no public IP — not reachable from internet directly) │
-│                                                             │
-│  Layer 3: EC2 Hardening                                     │
-│  ├── IMDSv2 enforced (SSRF protection)                      │
-│  ├── SSM Agent (management without open SSH port)           │
-│  ├── IAM role only — no hardcoded credentials               │
-│  └── CloudWatch agent (ships logs + metrics)                │
-│                                                             │
-│  Layer 4: S3 Security                                       │
-│  ├── cloudtrail-logs bucket (locked, MFA Delete)            │
-│  ├── app-data bucket (private, encrypted, versioned)        │
-│  └── Block Public Access — account-level + per bucket       │
-│                                                             │
-│  Layer 5: CloudTrail                                        │
-│  └── All regions, log validation, encrypted, tamper-proof   │
-│                                                             │
-│  Layer 6: CloudWatch Alarms                                 │
-│  └── 7 critical alarms → SNS → email                        │
-│                                                             │
-│  Layer 7: GuardDuty                                         │
-│  └── Enabled + validated (findings deliberately generated)  │
-│                                                             │
-│  Layer 8: AWS Config                                        │
-│  └── Continuous compliance evaluation across all resources  │
-└─────────────────────────────────────────────────────────────┘
-```
+The build is also documented publicly as a **30-Day AWS Well-Architected LinkedIn series**, sharing architecture decisions and enterprise risk framing for practitioners pursuing the same certification.
 
 ---
 
-## Environment
+## Author
 
-### Host Machine
+**Wilson Njoroge Wanderi**, CCEP, CC, KCNA, ITIL(R)4
+Middleware Engineering Specialist | Cloud Security Specialist (AWS)
+MSc Cybersecurity & Digital Forensics - Open University of Kenya
 
-| Component | Detail |
-|---|---|
-| OS | Kali Linux 2026.1 |
-| Hypervisor | VMware Workstation |
-| Network Mode | NAT (internet access for SSH to AWS) |
-
-### AWS Infrastructure
-
-| Component | Detail |
-|---|---|
-| Cloud Provider | AWS (AWS Educate free tier) |
-| Region | US East — N. Virginia (us-east-1) |
-| Instance Name | CyberNinja101 |
-| AMI | Ubuntu Server 24.04 LTS |
-| Instance Type | t3.micro |
-| Key Pair | cyberninja-key.pem |
-| VPC | Custom (10.0.0.0/16) — not the default VPC |
+Research focus: behavioural anomaly detection at API integration boundaries in Tier-1 commercial banking environments.
 
 ---
 
-## Implementation
-
-### Layer 1 — IAM & Account Hardening
-
-**Threat being mitigated:** Credential compromise, privilege escalation, unauthorised API access.
-
-The root account is the most powerful identity in AWS. It cannot be restricted by IAM policies — it bypasses everything. This makes it the highest-value target and the most dangerous thing to use routinely.
-
-**Root account hardening:**
-- MFA enabled on root immediately after account creation
-- No access keys created for root — ever
-- Root is used once to create the first admin IAM user, then the console is closed
-- Root credentials stored offline
-
-**IAM identity structure:**
-
-Users are never given permissions directly. Permissions attach to groups. Users are members of groups. This is how IAM scales without becoming unmanageable.
+## Architecture Summary
 
 ```
-IAM Group: cloud-admins
-└── Policy: AdministratorAccess (scoped)
-    └── User: admin-wilson (MFA enforced via policy condition)
-
-IAM Group: developers
-└── Policy: custom-developer-policy (EC2 + specific S3 bucket only)
-    └── User: developer-user
-        └── Permission Boundary: developer-boundary (hard ceiling on what they can ever access)
-
-IAM Group: auditors
-└── Policy: ReadOnlyAccess
-    └── User: readonly-auditor
+                 Internet
+                    |
+                    v
+              Internet Gateway
+                    |
++-------------------------------------------------------------+
+|                     ENTERPRISE VPC (10.0.0.0/16)             |
+|                                                               |
+|   PUBLIC TIER                     PRIVATE APP TIER           |
+|   [WAF] [ALB] [Bastion EC2]  -->  [App Server EC2]           |
+|                                          |                    |
+|   SECURITY TIER                   PRIVATE DB TIER            |
+|   [SIEM] [Forensic WS]            [RDS MySQL]                |
++-------------------------------------------------------------+
 ```
 
-**Permission boundary:** Applied to `developer-user`. Even if the developer somehow receives an AdministratorAccess policy (through misconfiguration or attack), the boundary prevents them from ever exceeding developer-level permissions. This is an advanced control that most cloud practitioners have never implemented.
+**Supporting services:** IAM (least-privilege users, groups, roles) - S3 (assets, logs, backups, CloudTrail) - KMS - Secrets Manager - CloudTrail - GuardDuty - Security Hub - AWS Config - CloudWatch - WAF
 
-**IAM password policy:**
-- Minimum 14 characters
-- Requires uppercase, lowercase, numbers, and symbols
-- 90-day rotation enforced
-- No reuse of last 5 passwords
-- MFA required for console access on admin accounts
-
-**EC2 IAM role (`ec2-ssm-role`):**
-
-The application EC2 instance never has hardcoded credentials. It assumes a role that grants it exactly two things: SSM access (for management) and read access to one specific S3 bucket path. Nothing else. If the instance is compromised, the attacker inherits only those two scoped permissions.
-
-```json
-{
-  "Effect": "Allow",
-  "Action": [
-    "ssm:UpdateInstanceInformation",
-    "ssm:ListAssociations",
-    "s3:GetObject"
-  ],
-  "Resource": [
-    "*",
-    "arn:aws:s3:::app-data-[accountid]/readonly/*"
-  ]
-}
-```
-
-**Screenshots:**
-- `01-root-mfa-enabled.png`
-- `02-iam-users-groups.png`
-- `03-password-policy.png`
-- `04-permission-boundary.png`
-- `05-ec2-iam-role.png`
+Full architecture rationale: [27-enterprise-architecture-overview](docs/27-enterprise-architecture-overview.md)
 
 ---
 
-### Layer 2 — Network Security (VPC, Security Groups, NACLs)
+## Why This Structure
 
-**Threat being mitigated:** Unauthorised network access, lateral movement, internet-exposed attack surface.
+Each document builds on identity, network, or compute infrastructure established in a prior one, mirroring how production environments are actually provisioned:
 
-The default VPC is a security anti-pattern. Every EC2 instance launched into it gets a public IP by default. There is no subnet segmentation. Security groups start permissive. This lab does not use the default VPC.
-
-**VPC architecture:**
-
-```
-VPC: 10.0.0.0/16
-
-├── Public Subnet:  10.0.1.0/24  (us-east-1a)
-│   └── Bastion host (the only entry point from the internet)
-│
-└── Private Subnet: 10.0.2.0/24  (us-east-1a)
-    └── Application EC2 (no public IP — unreachable from internet)
-```
-
-The application server has no public IP address. There is no direct path from the internet to it. To reach it you must go through the bastion in the public subnet, which only accepts SSH from your specific IP address.
-
-**Security groups:**
-
-Security groups are stateful — return traffic is automatically allowed. You only define what is permitted inbound.
-
-`sg-bastion` — attached to the bastion host:
-- Inbound: SSH (port 22) from `YOUR.IP.ADDRESS/32` only — not `0.0.0.0/0`
-- Outbound: SSH to private subnet (`10.0.2.0/24`) only
-
-`sg-application` — attached to the application EC2:
-- Inbound: SSH from `sg-bastion` only (security group reference, not IP range)
-- Inbound: HTTP/HTTPS from anywhere (if serving web traffic)
-- Outbound: HTTPS to internet (for OS updates only)
-
-Security group chaining — `sg-application` references `sg-bastion` as the SSH source, not an IP range. This means even if the bastion's IP changes, the rule remains correct. More importantly, it means the only thing that can SSH to the app server is the bastion — nothing else.
-
-**NACLs (Network Access Control Lists):**
-
-NACLs are stateless — unlike security groups, return traffic must be explicitly permitted. They operate at the subnet level, adding a second independent enforcement layer.
-
-NACLs are configured to:
-- Allow only necessary traffic defined in the security groups
-- Explicitly allow ephemeral ports 1024–65535 for return traffic (required for stateless operation — missing this is a common misconfiguration)
-- Deny all by default
-
-The critical distinction: **Security groups have no explicit deny** — they allow what is listed and deny everything else implicitly. **NACLs have explicit deny** — you can block specific IP ranges by rule. These two mechanisms are complementary, not redundant.
-
-**Screenshots:**
-- `06-vpc-subnet-diagram.png`
-- `07-security-group-bastion.png`
-- `08-security-group-application.png`
-- `09-nacl-rules.png`
+- **Network** provides the segmented environment everything else runs inside.
+- **Identity** is provisioned before compute, so no resource ever runs without correct, least-privilege permissions attached.
+- **Compute** fuses network and identity: every EC2 instance is placed into pre-built subnets and assumes pre-built roles, never hardcoded credentials.
+- **Storage, detection, and logging** extend this same environment, so that when something goes wrong, the evidence to investigate it already exists: forensic readiness is treated as an architecture decision, not an afterthought.
+- **Offensive validation** confirms the controls actually hold under realistic attack conditions, not just on paper.
+- **The capstone** runs all of the above together against one realistic enterprise environment.
 
 ---
 
-### Layer 3 — EC2 Hardening
+## Certification Alignment
 
-**Threat being mitigated:** SSRF credential theft, SSH brute force, lateral movement from compromised instance.
+Mapped directly to **AWS Certified Security - Specialty** exam domains:
 
-**IMDSv2 enforced:**
-
-The EC2 instance metadata service (IMDS) is reachable from inside the instance at `169.254.169.254`. It returns IAM role credentials, instance identity, and other sensitive data. IMDSv1 allows a simple `curl` request to retrieve credentials — this is the exact vector used in the Capital One breach (2019). IMDSv2 requires a session token, which prevents cross-site request forgery attacks from being used to steal instance credentials.
-
-```bash
-# Enforced at launch — IMDSv1 disabled
-aws ec2 modify-instance-metadata-options \
-  --instance-id i-xxxx \
-  --http-tokens required \
-  --http-put-response-hop-limit 1
-```
-
-**SSH hardening** (`/etc/ssh/sshd_config`):
-```
-PasswordAuthentication no
-PermitRootLogin no
-MaxAuthTries 3
-LoginGraceTime 30
-```
-
-Password authentication is disabled. Root login is disabled. The only way in is with the correct private key, from the bastion, using a non-root user.
-
-**SSM Agent:**
-
-AWS Systems Manager provides a secure channel to manage the instance without SSH being open at all. With SSM, you can open a shell session through the AWS console or CLI — no inbound port 22 required. This means `sg-application` can have SSH removed entirely in a production hardening scenario.
-
-**CloudWatch agent:**
-
-Installed on the instance. Ships system logs (`/var/log/syslog`, `/var/log/auth.log`) and OS metrics to CloudWatch. This means authentication events, sudo usage, and system errors are centralised and searchable — not siloed on the instance.
-
-**User data script (applied at launch):**
-```bash
-#!/bin/bash
-apt-get update -y
-apt-get upgrade -y
-snap install amazon-ssm-agent --classic
-systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
-```
-
-**Linux user management:**
-
-Three OS-level users created inside the VM to mirror the IAM identity structure:
-
-```bash
-# Create application user (no sudo)
-sudo adduser appuser
-
-# Create admin user (sudo access)
-sudo adduser adminwilson
-sudo usermod -aG sudo adminwilson
-
-# Verify privilege separation
-su - appuser
-sudo whoami    # should fail — not in sudo group
-```
-
-**Screenshots:**
-- `10-imdsv2-enforced.png`
-- `11-ssm-session.png`
-- `12-ssh-config-hardened.png`
-- `13-user-management.png`
+| Domain | Covered by |
+|--------|-----------|
+| Threat detection & incident response | Docs 09, 16-21, 29 |
+| Security logging & monitoring | Docs 06, 07, 10, 17 |
+| Infrastructure security | Docs 01, 03, 05, 24 |
+| Identity & access management | Docs 02, 19, 23 |
+| Data protection | Docs 04, 14, 15, 25 |
+| Management & security governance | Docs 08, 11, 12, 27 |
 
 ---
 
-### Layer 4 — S3 Security
+## Project Roadmap & Completion Tracker
 
-**Threat being mitigated:** Data exposure, unauthorised access, ransomware/deletion, exfiltration without audit trail.
+Tick `[x]` and fill in the completion date as each document is finished. This table is the single source of truth for build progress.
 
-S3 is responsible for more data breaches than any other AWS service. Not because it is insecure — because it is misconfigured. A single checkbox enables public access to everything in a bucket. This layer treats S3 with the same rigour as the network layer.
+### Phase 0: Reference
 
-**Bucket architecture:**
+| Status | Project | Doc | Date Completed |
+|--------|---------|-----|-----------------|
+| [ ] | Master Reference Guide | [00-master-reference-guide](docs/00-master-reference-guide.md) | |
 
-Three purpose-specific buckets. No mixed purposes.
+### Phase 1: Foundations
 
-```
-cloudtrail-logs-[accountid]   — audit logs only
-app-data-[accountid]          — application data
-static-assets-[accountid]     — public-facing assets only (if needed)
-```
+| Status | Project | Doc | Date Completed |
+|--------|---------|-----|-----------------|
+| [x] | VPC From Scratch | [01-vpc-lab-exercise](docs/01-vpc-lab-exercise.md) | |
+| [x] | IAM Users, Groups, Roles & Policies | [02-iam-users-groups-roles](docs/02-iam-users-groups-roles.md) | |
+| [x] | EC2 Instance Lifecycle | [03-ec2-instance-lifecycle](docs/03-ec2-instance-lifecycle.md) | |
+| [x] | S3 Buckets and Policies | [04-s3-buckets-and-policies](docs/04-s3-buckets-and-policies.md) | |
+| [x] | Security Groups and NACLs | [05-security-groups-and-nacls](docs/05-security-groups-and-nacls.md) | |
+| [ ] | CloudTrail Setup | [06-cloudtrail-setup](docs/06-cloudtrail-setup.md) | |
+| [ ] | CloudWatch Alarms | [07-cloudwatch-alarms](docs/07-cloudwatch-alarms.md) | |
+| [ ] | Billing and Cost Controls | [08-billing-and-cost-controls](docs/08-billing-and-cost-controls.md) | |
 
-**Controls applied to every bucket:**
+### Phase 2: Detection & Hardening
 
-Block Public Access — enabled at account level AND per bucket. Belt and suspenders. A single account-level setting protects against any individual bucket misconfiguration.
+| Status | Project | Doc | Date Completed |
+|--------|---------|-----|-----------------|
+| [ ] | GuardDuty Setup and Findings | [09-guardduty-setup-and-findings](docs/09-guardduty-setup-and-findings.md) | |
+| [ ] | VPC Flow Logs and Analysis | [10-vpc-flow-logs-and-analysis](docs/10-vpc-flow-logs-and-analysis.md) | |
+| [ ] | AWS Config and Drift Detection | [11-aws-config-and-drift-detection](docs/11-aws-config-and-drift-detection.md) | |
+| [ ] | Security Hub Overview | [12-security-hub-overview](docs/12-security-hub-overview.md) | |
+| [ ] | WAF Setup | [13-waf-setup](docs/13-waf-setup.md) | |
+| [ ] | KMS Encryption Basics | [14-kms-encryption-basics](docs/14-kms-encryption-basics.md) | |
+| [ ] | Secrets Manager | [15-secrets-manager](docs/15-secrets-manager.md) | |
 
-Server-side encryption — SSE-KMS on `cloudtrail-logs` and `app-data`. Every object is encrypted at rest. CloudTrail logs every KMS decrypt operation, so you know when data is read.
+### Phase 3: Cloud Forensics & Incident Response
 
-Versioning + MFA Delete — versioning means deleted or overwritten objects are recoverable. MFA Delete means no one can permanently destroy versions without a physical MFA device. A compromised credential alone cannot destroy your audit trail.
+| Status | Project | Doc | Date Completed |
+|--------|---------|-----|-----------------|
+| [ ] | EBS Snapshot Forensics | [16-ebs-snapshot-forensics](docs/16-ebs-snapshot-forensics.md) | |
+| [ ] | CloudTrail Log Analysis | [17-cloudtrail-log-analysis](docs/17-cloudtrail-log-analysis.md) | |
+| [ ] | Memory Acquisition (EC2) | [18-memory-acquisition-ec2](docs/18-memory-acquisition-ec2.md) | |
+| [ ] | Compromised IAM Response | [19-compromised-iam-response](docs/19-compromised-iam-response.md) | |
+| [ ] | S3 Breach Investigation | [20-s3-breach-investigation](docs/20-s3-breach-investigation.md) | |
+| [ ] | Lambda Auto-Isolation | [21-lambda-auto-isolation](docs/21-lambda-auto-isolation.md) | |
 
-**CloudTrail bucket policy** — the most locked-down bucket in the account:
+### Phase 4: Offensive Validation
 
-```json
-{
-  "Effect": "Deny",
-  "Principal": "*",
-  "Action": ["s3:DeleteObject", "s3:PutBucketPolicy"],
-  "Resource": "arn:aws:s3:::cloudtrail-logs-[accountid]/*",
-  "Condition": {
-    "StringNotEquals": {
-      "aws:PrincipalArn": "arn:aws:iam::[accountid]:root"
-    }
-  }
-}
-```
+| Status | Project | Doc | Date Completed |
+|--------|---------|-----|-----------------|
+| [ ] | CloudGoat Lab Setup | [22-cloudgoat-lab-setup](docs/22-cloudgoat-lab-setup.md) | |
+| [ ] | IAM Privilege Escalation | [23-iam-privilege-escalation](docs/23-iam-privilege-escalation.md) | |
+| [ ] | IMDS Attack and Hardening | [24-imds-attack-and-hardening](docs/24-imds-attack-and-hardening.md) | |
+| [ ] | S3 Misconfiguration Attacks | [25-s3-misconfiguration-attacks](docs/25-s3-misconfiguration-attacks.md) | |
+| [ ] | Pacu Framework Basics | [26-pacu-framework-basics](docs/26-pacu-framework-basics.md) | |
 
-Only root can modify the CloudTrail bucket policy — and root requires MFA. An attacker with admin credentials still cannot delete your audit logs.
+### Capstone Project
 
-**S3 access logging:**
+| Status | Project | Doc | Date Completed |
+|--------|---------|-----|-----------------|
+| [ ] | Enterprise Architecture Overview | [27-enterprise-architecture-overview](docs/27-enterprise-architecture-overview.md) | |
+| [ ] | Building the Environment Step-by-Step | [28-building-the-environment-step-by-step](docs/28-building-the-environment-step-by-step.md) | |
+| [ ] | Attack-Detect-Respond Simulation | [29-attack-detect-respond-simulation](docs/29-attack-detect-respond-simulation.md) | |
 
-Every `GetObject`, `PutObject`, and `DeleteObject` operation on `app-data` is logged to a dedicated logging bucket. This is separate from CloudTrail management events — data event logging must be explicitly enabled and produces the evidence trail for exfiltration investigations.
+### Supporting References
 
-**Screenshots:**
-- `14-block-public-access.png`
-- `15-bucket-encryption.png`
-- `16-versioning-mfa-delete.png`
-- `17-bucket-policy.png`
-- `18-s3-access-logging.png`
-
----
-
-### Layer 5 — CloudTrail (Immutable Audit Log)
-
-**Threat being mitigated:** Undetected account activity, post-breach forensic gaps, log tampering.
-
-CloudTrail records every API call made in your account — console clicks, CLI commands, SDK calls, and automated service actions. Without it, a breach investigation starts from nothing.
-
-**Configuration:**
-
-```
-Multi-region trail: yes (all regions, not just us-east-1)
-Log file validation: enabled (SHA-256 hash chain — detects tampering)
-S3 destination: cloudtrail-logs-[accountid]
-SSE-KMS encryption: enabled
-CloudWatch Logs integration: enabled (feeds the alarms in Layer 6)
-```
-
-Multi-region matters: attackers launch resources in regions you are not watching. If your trail is us-east-1 only, activity in eu-west-1 is invisible.
-
-Log file validation: each log file is hashed and the hash is signed. If a log file is modified or deleted after delivery, validation fails. You can prove tampering in court.
-
-**Screenshots:**
-- `19-cloudtrail-trail-config.png`
-- `20-log-validation-enabled.png`
-- `21-cloudtrail-s3-delivery.png`
+| Status | Project | Doc | Date Completed |
+|--------|---------|-----|-----------------|
+| [ ] | AWS Security Methodology | [aws_security_methodology](docs/aws_security_methodology.md) | |
+| [ ] | AWS Security Runbook | [aws_security_runbook](docs/aws_security_runbook.md) | |
+| [ ] | VPC Lab Exercise (supplementary notes) | [vpc_lab_exercise](docs/vpc_lab_exercise.txt) | |
 
 ---
 
-### Layer 6 — CloudWatch Monitoring & Alerting
+## Capstone Project Details
 
-**Threat being mitigated:** Undetected privilege escalation, account takeover, infrastructure changes going unnoticed.
+The capstone (Docs 27–29) is the point at which every prior phase converges into one realistic, attackable, and investigable environment:
 
-Logging without alerting is a filing cabinet. This layer creates metric filters on CloudTrail logs and attaches alarms that fire to SNS → email. Every alarm represents a real threat scenario.
+- **Doc 27: Enterprise Architecture Overview** defines the full AcmeFintech Ltd environment: multi-tier VPC, bastion access pattern, isolated security/forensics subnet, IAM structure across five roles and four groups, and a complete PCI DSS control mapping.
+- **Doc 28: Building the Environment Step-by-Step** walks through provisioning the entire architecture in sequence, reusing and extending every pattern established in Phases 1–4.
+- **Doc 29: Attack-Detect-Respond Simulation** runs a live, realistic attack chain (IAM privilege escalation -> data exfiltration -> resource abuse) against the built environment, validates detection via GuardDuty/Security Hub, and walks through the full incident response and investigation process.
 
-| Alarm | Threat It Detects |
-|---|---|
-| Root account login | Root should never log in — any activity is an incident |
-| IAM policy changes | Privilege escalation attempt |
-| Security group rule changes | Attacker opening access or covering tracks |
-| Failed console logins ≥ 3 | Brute force or credential stuffing |
-| CloudTrail stopped or deleted | Attacker blinding your logging |
-| Unauthorised API calls | Credential probing with insufficient permissions |
-| MFA device deactivated | Account takeover indicator |
+**Estimated capstone cost:** $15–25, run for 1–2 days then torn down.
 
-Each alarm follows the same pattern:
+**Fictional company profile:**
+
+| Detail | Value |
+|--------|-------|
+| Company name | AcmeFintech Ltd |
+| Business | Online payment processing |
+| Compliance | PCI DSS (handles credit card data) |
+| Team simulated | 3 developers, 1 security analyst, 1 DBA |
+| Sensitivity | Financial data, customer PII |
+
+---
+
+## Prerequisites Checklist (from Doc 27)
 
 ```
-CloudTrail log → CloudWatch Logs → Metric Filter → CloudWatch Alarm → SNS Topic → Email
+Phase 1:
+  [ ] Build a VPC from scratch (console and CLI)
+  [ ] Understand IAM users, groups, roles, policies
+  [ ] Know EC2 lifecycle and storage
+  [ ] Know S3 bucket policies and security
+  [ ] Know security groups and NACL differences
+  [ ] Have CloudTrail and CloudWatch running
+
+Phase 2:
+  [ ] GuardDuty enabled and findings understood
+  [ ] VPC Flow Logs configured and queryable
+  [ ] AWS Config rules active
+  [ ] Security Hub standards enabled
+  [ ] WAF configured on an ALB
+  [ ] KMS keys created and used
+  [ ] Secrets Manager in use
+
+Phase 3:
+  [ ] Acquire and analyze EBS snapshots
+  [ ] Query CloudTrail to reconstruct attack timelines
+  [ ] Understand memory acquisition with LiME
+  [ ] Know the IAM incident response playbook
+  [ ] Investigate S3 breaches
+  [ ] Have a working Lambda auto-isolation function
+
+Phase 4:
+  [ ] Run at least 2 CloudGoat scenarios
+  [ ] Understand at least 5 IAM escalation paths
+  [ ] Know the IMDS attack and enforce IMDSv2
+  [ ] Know S3 misconfiguration attack patterns
+  [ ] Use Pacu for enumeration
 ```
 
-This is a real alerting pipeline. When a root login occurs, an email arrives within minutes.
+---
 
-**Screenshots:**
-- `22-metric-filter-root-login.png`
-- `23-cloudwatch-alarm-config.png`
-- `24-sns-topic-subscription.png`
-- `25-alarm-email-received.png`
+## What's Built So Far (Evidence)
+
+- **VPC**: public/private subnets, IGW, route tables, security groups scoped to least privilege
+  Evidence: [`screenshots/vpc/`](screenshots/vpc)
+- **IAM**: users, groups, roles; custom least-privilege policy scoped to `lab-*` resources; role-based access tested per user (dev, security, read-only)
+  Evidence: [`screenshots/iam/`](screenshots/iam)
+- **EC2**: instance in the public subnet, IAM role attached, IMDSv2 enforced, EBS provisioned/snapshotted, Elastic IP assigned, detailed monitoring, system log/screenshot retrieval
+  Evidence: [`screenshots/ec2/`](screenshots/ec2)
+- **S3**: bucket created, versioning enabled and tested, public access blocked, HTTPS-only policy, scoped user policy, server access logging enabled and verified, lifecycle policy, presigned URL generation
+  Evidence: [`screenshots/s3/`](screenshots/s3)
 
 ---
 
-### Layer 7 — GuardDuty (Threat Detection)
+## Tech Stack
 
-**Threat being mitigated:** Active attacks, anomalous behaviour, compromised credentials, reconnaissance.
-
-GuardDuty is AWS's managed threat detection service. It analyses CloudTrail, VPC Flow Logs, and DNS logs using ML models and threat intelligence feeds. This layer does not just enable GuardDuty — it **validates** it by deliberately generating findings.
-
-The difference between "I enabled GuardDuty" and "GuardDuty works" is the difference between a checkbox and a tested control.
-
-**Findings generated and validated:**
-
-| Finding | How Generated | Expected Alert |
-|---|---|---|
-| `Recon:EC2/PortProbeUnprotectedPort` | Nmap scan from Kali VM against EC2 | GuardDuty fires within 5 minutes |
-| `UnauthorizedAccess:EC2/SSHBruteForce` | Hydra SSH brute force attempt against bastion | GuardDuty fires on repeated failed attempts |
-| `Policy:IAMUser/RootCredentialUsage` | Root account console login | Fires immediately |
-
-Each finding is documented with:
-- The exact action taken to generate it
-- The GuardDuty finding screenshot
-- The SNS email notification screenshot
-- The time between action and alert
-
-This validates the full detection-to-notification pipeline.
-
-**Screenshots:**
-- `26-guardduty-enabled.png`
-- `27-portprobe-finding.png`
-- `28-sshbruteforce-finding.png`
-- `29-root-credential-finding.png`
-- `30-guardduty-alert-email.png`
-
----
-
-### Layer 8 — AWS Config (Continuous Compliance)
-
-**Threat being mitigated:** Configuration drift — infrastructure that was secure when deployed becoming insecure over time through incremental changes.
-
-CloudWatch alarms tell you when something happens. GuardDuty tells you when an attack is occurring. AWS Config tells you whether your infrastructure is **currently configured correctly** — continuously, not just at deployment time.
-
-**Managed rules deployed:**
-
-| Rule | What It Checks |
-|---|---|
-| `iam-root-access-key-check` | Root account has no access keys |
-| `mfa-enabled-for-iam-console-access` | All IAM users with console access have MFA |
-| `restricted-ssh` | No security group allows SSH from 0.0.0.0/0 |
-| `vpc-default-security-group-closed` | Default SG has no inbound/outbound rules |
-| `s3-bucket-public-read-prohibited` | No S3 bucket is publicly readable |
-| `s3-bucket-server-side-encryption-enabled` | All buckets have encryption enabled |
-| `cloudtrail-enabled` | CloudTrail is active in the account |
-| `cloud-trail-log-file-validation-enabled` | Log file validation is on |
-| `ec2-imdsv2-check` | All EC2 instances require IMDSv2 |
-
-If someone modifies a security group to add `0.0.0.0/0`, Config marks that resource non-compliant within minutes and can trigger an SNS alert. Infrastructure cannot silently drift from its secure baseline.
-
-**Screenshots:**
-- `31-config-rules-compliant.png`
-- `32-config-compliance-dashboard.png`
-- `33-config-noncompliant-example.png`
-
----
-
-## What This Demonstrates
-
-A hiring manager or senior assessor reviewing this project will observe:
-
-- **Architectural thinking** — decisions are made for documented reasons, not convenience. The private subnet, the security group chaining, the permission boundary — each one has a clear threat it addresses.
-- **Validated controls** — GuardDuty findings are not assumed to work. They are tested. Detection is not a checkbox.
-- **Advanced controls** — IMDSv2 enforcement, permission boundaries, MFA Delete on S3, log file validation with hash chaining, NACLs with explicit stateless rules — these are not in beginner tutorials. They are in production environments.
-- **Threat mapping** — every control is connected to the threat it mitigates. This is how security professionals think, not how system administrators think.
-- **Separation of concerns** — identity, network, compute, data, logging, monitoring, and detection are treated as independent layers. A failure in one does not cascade through all.
+`AWS VPC` `IAM` `EC2` `S3` `RDS` `KMS` `Secrets Manager` `CloudTrail` `CloudWatch` `GuardDuty` `Security Hub` `AWS Config` `WAF` `Session Manager (SSM)` `CloudGoat` `Pacu` `Volatility` `Sleuthkit` `FTK Imager` `LiME`
 
 ---
 
 ## Repository Structure
 
 ```
-cloud-security-lab/
-│
+.
 ├── README.md
-│
-├── 01-iam/
-│   ├── notes.md
-│   └── policies/
-│       ├── developer-policy.json
-│       ├── developer-boundary.json
-│       └── ec2-ssm-role.json
-│
-├── 02-network/
-│   └── notes.md
-│
-├── 03-ec2-hardening/
-│   ├── notes.md
-│   └── user-data.sh
-│
-├── 04-s3-security/
-│   ├── notes.md
-│   └── cloudtrail-bucket-policy.json
-│
-├── 05-cloudtrail/
-│   └── notes.md
-│
-├── 06-cloudwatch/
-│   ├── notes.md
-│   └── metric-filters.json
-│
-├── 07-guardduty/
-│   └── notes.md
-│
-├── 08-config/
-│   └── notes.md
-│
-├── screenshots/
-│   ├── 01-root-mfa-enabled.png
-│   ├── 02-iam-users-groups.png
-│   ├── 03-password-policy.png
-│   ├── 04-permission-boundary.png
-│   ├── 05-ec2-iam-role.png
-│   ├── 06-vpc-subnet-diagram.png
-│   ├── 07-security-group-bastion.png
-│   ├── 08-security-group-application.png
-│   ├── 09-nacl-rules.png
-│   ├── 10-imdsv2-enforced.png
-│   ├── 11-ssm-session.png
-│   ├── 12-ssh-config-hardened.png
-│   ├── 13-user-management.png
-│   ├── 14-block-public-access.png
-│   ├── 15-bucket-encryption.png
-│   ├── 16-versioning-mfa-delete.png
-│   ├── 17-bucket-policy.png
-│   ├── 18-s3-access-logging.png
-│   ├── 19-cloudtrail-trail-config.png
-│   ├── 20-log-validation-enabled.png
-│   ├── 21-cloudtrail-s3-delivery.png
-│   ├── 22-metric-filter-root-login.png
-│   ├── 23-cloudwatch-alarm-config.png
-│   ├── 24-sns-topic-subscription.png
-│   ├── 25-alarm-email-received.png
-│   ├── 26-guardduty-enabled.png
-│   ├── 27-portprobe-finding.png
-│   ├── 28-sshbruteforce-finding.png
-│   ├── 29-root-credential-finding.png
-│   ├── 30-guardduty-alert-email.png
-│   ├── 31-config-rules-compliant.png
-│   ├── 32-config-compliance-dashboard.png
-│   └── 33-config-noncompliant-example.png
-│
-└── docs/
-    ├── executive-summary.md
-    ├── technical-report.md
-    └── threat-control-mapping.md
+├── docs/               : all 29 build documents plus reference guides
+└── screenshots/
+    ├── vpc/
+    ├── iam/
+    ├── ec2/
+    └── s3/
 ```
 
 ---
 
-<div align="center">
+## Content Series
 
-**Lab conducted for educational purposes — AWS Educate isolated environment.**
+This build is documented publicly as part of a **30-Day AWS Well-Architected series** on LinkedIn: architecture decisions, enterprise risk framing, and exam-relevant insight for practitioners pursuing AWS Certified Security – Specialty.
 
-**⭐ If you find this work valuable, please consider starring the repository**
+---
 
-**Wilson Njoroge Wanderi**
+## Disclaimer
 
-[github.com/wilsonnjoroge](https://github.com/wilsonnjoroge)
+All infrastructure, company names (AcmeFintech Ltd), and data used in this project are fictional and built exclusively within isolated, cost-controlled AWS lab environments for educational and portfolio purposes. No production or customer data is used at any stage.
 
-*Last Updated: June 2026*
+---
 
-</div>
+## License
+
+This project's documentation is shared for educational purposes. Reuse with attribution.
