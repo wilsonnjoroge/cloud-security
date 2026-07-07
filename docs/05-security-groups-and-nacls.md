@@ -235,13 +235,13 @@ For each:
 ```
 **VPC → Endpoints → Create endpoint**
 ```
-**Type:** AWS services
-**Search** the service name
-**VPC:** `lab1-vpc`
-**Subnet:** the private subnet
-**Enable Private DNS name** (critical; without it, the agent still tries the public hostname)
-**Security group:** A dedicated `lab1-vpc-endpoints-sg` 
-**Allowing inbound 443 from `lab1-app-server-sg`:** Not the app server's own SG attached directly. It has no rule permitting itself in on 443).
+**Type:** AWS services  
+**Search** the service name  
+**VPC:** `lab1-vpc`  
+**Subnet:** the private subnet  
+**Enable Private DNS name** (critical; without it, the agent still tries the public hostname)  
+**Security group:** A dedicated `lab1-vpc-endpoints-sg`  
+**Allowing inbound 443 from `lab1-app-server-sg`:** Not the app server's own SG attached directly. It has no rule permitting itself in on 443).  
 
 This keeps the subnet genuinely private: no `0.0.0.0/0` route, no NAT
 Gateway cost, and SSM traffic never touches the public internet.
