@@ -154,7 +154,7 @@ fields eventTime eventName userIdentity.userName sourceIPAddress filter eventSou
 
 ```sql
 
-fields eventTime, eventName, sourceIPAddress filter userIdentity.type = "Root" sort eventTime desc
+fields eventTime eventName sourceIPAddress filter userIdentity.type = "Root" sort eventTime desc
 
 ```
 
@@ -241,7 +241,7 @@ CloudTrail Lake stores events in an immutable data store and lets you query them
 
 ```
 CloudTrail → Lake → Create event data store
-  Name:          lab-event-store
+  Name:          lab1-event-store
   Retention:     90 days
   Pricing:       Ingestion-based
 ```
