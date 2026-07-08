@@ -1,7 +1,7 @@
 # 🔍 CloudTrail: Audit Logging & Forensic Evidence
 
-> **Phase 1 · Document 6 of 29**  
-> **Estimated cost:** ~$2/month for S3 storage · **Estimated time:** 45–60 minutes  
+> **Phase 1 · Document 6 of 29**
+> **Estimated cost:** ~$2/month for S3 storage · **Estimated time:** 45–60 minutes
 > **Prerequisites:** `04-s3-buckets-and-policies.md`
 
 ---
@@ -48,6 +48,16 @@ What exactly changed?
 | Create new IAM Role | `Lab1CloudTrailRoleForCloudwatchLogs` |
 | SNS notification | Skip for now |
 
+![Create new trail](../screenshots/cloud-trail/01-create-new-trail-a.png)
+
+![Create new trail](../screenshots/cloud-trail/01-create-new-trail-b.png)
+
+![Create new trail](../screenshots/cloud-trail/01-create-new-trail-c.png)
+
+![Trail name, S3, and SNS](../screenshots/cloud-trail/02-trail-name-s3-sns.png)
+
+![Log group and IAM role](../screenshots/cloud-trail/03-log-group-and-iam-role.png)
+
 ### Event types to log
 
 | Event type | Enable? | Reason |
@@ -57,9 +67,19 @@ What exactly changed?
 | Data events: Lambda | Yes | Function invocations |
 | Insights events | Yes | Anomaly detection |
 
+![Choose log events](../screenshots/cloud-trail/04-choose-log-events-a.png)
+
+![Choose data events](../screenshots/cloud-trail/05-choose-data-events.png)
+
+![Choose event aggregation](../screenshots/cloud-trail/05-choose-event-aggregation.png)
+
 > **Multi-region:** Ensure `Apply trail to all regions` is enabled. An attacker operating in a region you don't watch leaves no trace in a single-region trail.
 
 Click **Create trail**.
+
+![Trail created](../screenshots/cloud-trail/06-trail-created.png)
+
+![Bucket for the trail logs created](../screenshots/cloud-trail/07-bucket-for-the-trail-logs-created.png)
 
 ---
 
@@ -73,6 +93,12 @@ aws s3 cp s3://lab1-cloudtrail-logs-willy/AWSLogs/ACCOUNT-ID/CloudTrail/us-east-
 gunzip logfile.json.gz
 cat logfile.json | python3 -m json.tool
 ```
+
+![View logs created](../screenshots/cloud-trail/08-view-logs-created-a.png)
+
+![View logs](../screenshots/cloud-trail/09-view-logs-a.png)
+
+![View logs, sensitive fields blurred](../screenshots/cloud-trail/09-view-logs-b-blured.png)
 
 A single event looks like this:
 
@@ -115,6 +141,8 @@ A single event looks like this:
 | `responseElements` | What AWS returned |
 | `errorCode` | If it failed: why (useful for detecting failed attacks) |
 
+![Forensic fields](../screenshots/cloud-trail/10-forensic-fields.png)
+
 ---
 
 ## Step 3: Query Logs with CloudWatch Logs Insights
@@ -125,50 +153,55 @@ CloudTrail logs flow into CloudWatch Logs in near real-time. You can query them 
 
 Select log group: `/cloudtrail/lab1`
 
+![Query logs in CloudWatch Insights](../screenshots/cloud-trail/11-query-logs-in-cloudwatch-insights-a.png)
+
+![Query logs in CloudWatch Insights](../screenshots/cloud-trail/11-query-logs-in-cloudwatch-insights-b.png)
+
+![Logs before filters](../screenshots/cloud-trail/12-logs-before-filtrs-a.png)
+
+![Logs before filters](../screenshots/cloud-trail/12-logs-before-filtrs-b.png)
+
 ### Query 1: All actions by a specific user
 
 ```sql
-
 fields eventTime eventName sourceIPAddress errorCode filter userIdentity.userName = "admin-wilson" sort eventTime desc limit 50
-
 ```
 
+![Logs after filters - actions per user](../screenshots/cloud-trail/13-logs-after-filters-actions-per-user.png)
 
 ### Query 2: All failed API calls (detect probing)
 
 ```sql
-
 fields eventTime eventName userIdentity.userName sourceIPAddress errorCode filter ispresent(errorCode) sort eventTime desc limit 100
-
 ```
+
+![Logs after filters - failed API calls](../screenshots/cloud-trail/13-logs-after-filters-failed-api-calls.png)
 
 ### Query 3: IAM changes (high priority alert)
 
 ```sql
-
 fields eventTime eventName userIdentity.userName sourceIPAddress filter eventSource = "iam.amazonaws.com" sort eventTime desc
-
 ```
+
+![Logs after filters - IAM changes](../screenshots/cloud-trail/13-logs-after-filters-iam-changes.png)
 
 ### Query 4: Root account activity (should be near zero)
 
 ```sql
-
 fields eventTime eventName sourceIPAddress filter userIdentity.type = "Root" sort eventTime desc
-
 ```
+
+![Logs after filters - root account activity](../screenshots/cloud-trail/13-logs-after-filters-root-account-activities.png)
 
 ### Query 5: Security group modifications (detect firewall tampering)
 
 ```sql
-
 fields eventTime, eventName, userIdentity.userName, sourceIPAddress
 | filter eventName in ["AuthorizeSecurityGroupIngress",
                         "RevokeSecurityGroupIngress",
                         "CreateSecurityGroup",
                         "DeleteSecurityGroup"]
 | sort eventTime desc
-
 ```
 
 ---
@@ -178,6 +211,8 @@ fields eventTime, eventName, userIdentity.userName, sourceIPAddress
 Set up automatic alerts for high-priority security events.
 
 **Console path:** `CloudWatch → Log groups → /cloudtrail/lab1 → Metric filters → Create metric filter`
+
+![Create alarm on CloudTrail events](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-s.png)
 
 ### Alert 1: Root account login
 
@@ -194,21 +229,27 @@ Filter pattern:
 
 Then create an alarm on this metric: threshold ≥ 1 → send SNS email alert.
 
+![Alarm - root login](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-root-login.png)
+
 ### Alert 2: IAM policy changes
 
 ```
-{ ($.eventName = "PutUserPolicy") || ($.eventName = "AttachUserPolicy") || 
+{ ($.eventName = "PutUserPolicy") || ($.eventName = "AttachUserPolicy") ||
   ($.eventName = "DetachUserPolicy") || ($.eventName = "DeleteUserPolicy") }
 ```
+
+![Alarm - IAM changes](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-iam-changes.png)
 
 ### Alert 3: CloudTrail itself being disabled
 
 ```
-{ ($.eventName = "DeleteTrail") || ($.eventName = "StopLogging") || 
+{ ($.eventName = "DeleteTrail") || ($.eventName = "StopLogging") ||
   ($.eventName = "UpdateTrail") }
 ```
 
 > **This alert is critical.** The first thing many attackers do after gaining access is disable CloudTrail to cover their tracks. Alerting on this immediately tells you an attack is in progress.
+
+![Alarm - CloudTrail disabled](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-cloudtrail-disabled.png)
 
 ---
 
@@ -222,6 +263,8 @@ This should already be enabled if you checked it during trail creation. Verify:
 CloudTrail → Trails → lab1-audit-trail → Log file validation: Enabled
 ```
 
+![Trail log validation enabled](../screenshots/cloud-trail/15-trail-log-validation-enabled.png)
+
 Validate logs from the CLI:
 
 ```bash
@@ -230,6 +273,8 @@ aws cloudtrail validate-logs \
   --start-time 2024-01-01 \
   --end-time 2024-01-02
 ```
+
+![Trail log validation confirmed from CLI](../screenshots/cloud-trail/15-trail-log-validation-confirm-from-cli.png)
 
 Output tells you if any log files were modified, deleted, or corrupted since creation: essential for maintaining the integrity of forensic evidence.
 
@@ -245,6 +290,10 @@ CloudTrail → Lake → Create event data store
   Retention:     90 days
   Pricing:       Ingestion-based
 ```
+
+![Create data lake](../screenshots/cloud-trail/16-crreate-data-lake-a.png)
+
+![Create data lake](../screenshots/cloud-trail/16-crreate-data-lake-b.png)
 
 Run a query:
 
