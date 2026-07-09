@@ -151,8 +151,8 @@ This table is the single source of truth for build progress.
 | ☑️| EC2 Instance Lifecycle | `03-ec2-instance-lifecycle` |
 | ☑️ | S3 Buckets and Policies | `04-s3-buckets-and-policies` |
 | ☑️ | Security Groups and NACLs | `05-security-groups-and-nacls` |
-| [ ] | CloudTrail Setup | `06-cloudtrail-setup` |
-| [ ] | CloudWatch Alarms | `07-cloudwatch-alarms` |
+| ☑️ | CloudTrail Setup | `06-cloudtrail-setup` |
+| ☑️ | CloudWatch Alarms | `07-cloudwatch-alarms` |
 | [ ] | Billing and Cost Controls | `08-billing-and-cost-controls` |
 
 ### Phase 2: Detection & Hardening
@@ -238,7 +238,7 @@ The capstone (Docs 27–29) is the point at which every prior phase converges in
 - [x] Know EC2 lifecycle and storage
 - [x] Know S3 bucket policies and security
 - [x] Know security groups and NACL differences
-- [ ] Have CloudTrail and CloudWatch running
+- [x] Have CloudTrail and CloudWatch running
 
 **Phase 2**
 - [ ] GuardDuty enabled and findings understood
