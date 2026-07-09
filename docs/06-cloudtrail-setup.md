@@ -214,22 +214,53 @@ Set up automatic alerts for high-priority security events.
 
 ![Create alarm on CloudTrail events](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-s.png)
 
-### Alert 1: Root account login
+### Alert 1: Root and IAM User login
 
-Filter pattern:
-```
-{ ($.userIdentity.type = "Root") && ($.eventName = "ConsoleLogin") }
-```
 
-| Field | Value |
-|-------|-------|
-| Metric namespace | `CloudTrailMetrics` |
-| Metric name | `RootAccountLogin` |
-| Metric value | `1` |
 
-Then create an alarm on this metric: threshold ≥ 1 → send SNS email alert.
+The alarms built in this section seeks to answer the more useful incident-response question: 
+1. **Was it a successful login** by investigating who,when, from where.
+2. **Was it a failed attempt** symbolizing possible brute-force, alert on repetition.
 
-![Alarm - root login](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-root-login.png)
+Collapsing both into one filter means a single failed password attempt looks
+identical to an actual root session, which is not the resolution incident
+response needs.
+
+Creating the following filters will seek to create more targeted and meaningful alarm:
+
+| Filter | Pattern | Alarm threshold | Why |
+|---|---|---|---|
+| Root login - **success** | `{ ($.eventName = "ConsoleLogin") && ($.userIdentity.type = "Root") && ($.responseElements.ConsoleLogin = "Success") }` | ≥ 1 | Every real root session is worth investigating on its own |
+| Root login - **failure** | `{ ($.eventName = "ConsoleLogin") && ($.userIdentity.type = "Root") && ($.errorMessage = "Failed authentication") }` | ≥ 3–5 in 5 min | Repeated failures against root specifically is a targeted attack signal |
+| IAM user login - **success** | `{ ($.eventName = "ConsoleLogin") && ($.userIdentity.type = "IAMUser") && ($.responseElements.ConsoleLogin = "Success") }` | Optional / audit-only | Baseline visibility, not usually alert-worthy on its own |
+| IAM user login - **failure** | `{ ($.eventName = "ConsoleLogin") && ($.userIdentity.type = "IAMUser") && ($.errorMessage = "Failed authentication") }` | ≥ 5–10 in 5–15 min | Password guessing / credential stuffing against any user |
+
+**Why threshold on failures, not on every single event:** one failed login is normal human error. A cluster of failures in a short window is a pattern. Alerting on every single failure creates noise that trains you to ignore the alarm; the opposite of what Step 4's `RootAccountLogin` filter risked before this refinement.
+
+**Why success gets threshold = 1:** unlike failures, a genuine root login is rare and significant enough on its own that even one instance deserves attention - there's no "normal noise" to filter out here.
+
+---
+
+**Alarm - Successful Root login**  
+
+![Alarm - successful root login](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-root-success-login.png)
+
+
+**Alarm - Failed Root login**  
+
+![Alarm - failed root login](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-root-failed-login.png)
+
+
+**Alarm - Successful IAM User login**  
+
+![Alarm - Successful IAM user login](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-iam-user-success-login.png)
+
+
+**Alarm - Failed IAM User login**  
+
+![Alarm - Failed IAM User login](../screenshots/cloud-trail/14-create-alarm-on-cloudtrail-events-iam-user-failed-login.png)  
+  
+
 
 ### Alert 2: IAM policy changes
 
