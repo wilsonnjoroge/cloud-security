@@ -1,7 +1,7 @@
 # 💰 Billing & Cost Controls: Protect Your $100
 
-> **Phase 1 · Document 8 of 29**  
-> **Estimated cost:** Free to set up · **Estimated time:** 30 minutes  
+> **Phase 1 · Document 8 of 29**
+> **Estimated cost:** Free to set up · **Estimated time:** 30 minutes
 > **Do this first:** Before any other lab work
 
 ---
@@ -43,9 +43,17 @@ Billing → Billing preferences → Alert preferences
 → Save preferences
 ```
 
+![Setting billing preference](../screenshots/billing-and-cost/01-setting-billing-preference-a.png)
+
+![Setting billing preference](../screenshots/billing-and-cost/01-setting-billing-preference-b.png)
+
+![Setting billing preference](../screenshots/billing-and-cost/01-setting-billing-preference-c.png)
+
 ### Create budget alerts at three levels
 
 **Console path:** `Billing → Budgets → Create budget`
+
+![Create budget](../screenshots/billing-and-cost/02-create-budget-a.png)
 
 #### Budget 1: Early warning at $20
 
@@ -57,6 +65,8 @@ Billing → Billing preferences → Alert preferences
 | Alert threshold | 80% actual ($16) → email |
 | Alert threshold | 100% actual ($20) → email |
 
+![Create cost budget - $20](../screenshots/billing-and-cost/02-create-cost-budget-20.png)
+
 #### Budget 2: Serious warning at $50
 
 | Field | Value |
@@ -65,6 +75,8 @@ Billing → Billing preferences → Alert preferences
 | Budgeted amount | $50 |
 | Alert threshold | 100% actual ($50) → email |
 
+![Create cost budget - $50](../screenshots/billing-and-cost/02-create-cost-budget-50.png)
+
 #### Budget 3: Emergency at $100
 
 | Field | Value |
@@ -72,6 +84,10 @@ Billing → Billing preferences → Alert preferences
 | Budget name | `lab1-emergency-100` |
 | Budgeted amount | $100 |
 | Alert threshold | 100% actual ($100) → email + SMS |
+
+![Create cost budget - $80](../screenshots/billing-and-cost/02-create-cost-budget-80.png)
+
+> ⚠️ **Verify before finalizing:** the screenshot on file for this step is named `02-create-cost-budget-80.png`, suggesting the third budget may have been configured at $80 rather than $100 as written above. Confirm which value is actually correct in the console and align the doc text and screenshot filename before treating this as final.
 
 > Do not wait for the alert at $100 to take action. The $20 alert is your "check what is running" signal.
 
@@ -84,6 +100,10 @@ Cost Explorer lets you see exactly what you are spending and where.
 ```
 Billing → Cost Explorer → Enable Cost Explorer
 ```
+
+![Enable Cost Explorer](../screenshots/billing-and-cost/03-enable-cost-explorer.png)
+
+![Enable Cost Explorer](../screenshots/billing-and-cost/03-enable-cost-explorer-b.png)
 
 It takes 24 hours to populate. Once active, use it to:
 - See spending by service
@@ -98,33 +118,33 @@ It takes 24 hours to populate. Once active, use it to:
 These are the services that surprise beginners with unexpected charges:
 
 ### NAT Gateway
-**Cost:** ~$0.045/hour = **$32/month** + $0.045 per GB data processed  
-**Trap:** Easy to create during a VPC lab and forget  
+**Cost:** ~$0.045/hour = **$32/month** + $0.045 per GB data processed
+**Trap:** Easy to create during a VPC lab and forget
 **Fix:** Delete immediately when done: `VPC → NAT Gateways → Delete`
 
 ### RDS (Relational Database)
-**Cost:** db.t3.micro = ~$0.017/hour = **$12/month** (outside free tier)  
-**Trap:** RDS cannot be stopped permanently, only for 7 days  
+**Cost:** db.t3.micro = ~$0.017/hour = **$12/month** (outside free tier)
+**Trap:** RDS cannot be stopped permanently, only for 7 days
 **Fix:** Delete the instance when not in use, take a final snapshot
 
 ### Elastic IP (unassociated)
-**Cost:** ~$0.005/hour = **$3.60/month** per unassociated IP  
-**Trap:** Created for a lab, instance terminated, IP forgotten  
+**Cost:** ~$0.005/hour = **$3.60/month** per unassociated IP
+**Trap:** Created for a lab, instance terminated, IP forgotten
 **Fix:** Release all unassociated Elastic IPs after each lab
 
 ### Data Transfer
-**Cost:** $0.09 per GB outbound (after 100 GB free)  
-**Trap:** Large file downloads from EC2 to your laptop  
+**Cost:** $0.09 per GB outbound (after 100 GB free)
+**Trap:** Large file downloads from EC2 to your laptop
 **Fix:** Keep data transfers within the same region where possible
 
 ### CloudWatch Logs
-**Cost:** $0.50 per GB ingested, $0.03 per GB stored per month  
-**Trap:** Verbose application logs streaming to CloudWatch  
+**Cost:** $0.50 per GB ingested, $0.03 per GB stored per month
+**Trap:** Verbose application logs streaming to CloudWatch
 **Fix:** Set retention periods on all log groups (7–30 days for labs)
 
 ### Secrets Manager
-**Cost:** $0.40 per secret per month  
-**Trap:** Creating many secrets during testing  
+**Cost:** $0.40 per secret per month
+**Trap:** Creating many secrets during testing
 **Fix:** Delete test secrets immediately
 
 ---
@@ -140,6 +160,8 @@ Activate these tags:
 - `Project`
 - `Sub-Project`
 - `Owner`
+
+![Cost allocation tags](../screenshots/billing-and-cost/04-cost-allocation-tags-a.png)
 
 Then tag every resource you create:
 
@@ -166,6 +188,12 @@ Trusted Advisor checks your account for cost savings, security issues, and perfo
 ```
 Trusted Advisor → Cost optimization
 ```
+
+![Trusted Advisor](../screenshots/billing-and-cost/05-trusted-advisor-a.png)
+
+![Trusted Advisor](../screenshots/billing-and-cost/05-trusted-advisor-b.png)
+
+![Trusted Advisor - downloaded cost optimization report](../screenshots/billing-and-cost/05-trusted-advisor-c-downloaded-cost-optimization.png)
 
 Free tier checks include:
 - Idle EC2 instances (running but doing nothing)
@@ -219,6 +247,8 @@ Make this a habit:
 Billing → Bills → current month
 ```
 
+![Bills](../screenshots/billing-and-cost/06-bills.png)
+
 Look at each service line. Anything unexpected, investigate immediately. Small charges left unchecked become large bills.
 
 The AWS Cost Anomaly Detection service can automate this:
@@ -229,6 +259,12 @@ Billing → Cost Anomaly Detection → Create monitor
   Alert threshold: $5 anomaly
   Notification: your email
 ```
+
+![Cost Anomaly Detection](../screenshots/billing-and-cost/07-cost-anomaly-detection-a.png)
+
+![Cost Anomaly Detection - create cost monitor](../screenshots/billing-and-cost/07-cost-anomaly-detection-create-cost-monitor-a.png)
+
+![Cost Anomaly Detection - create cost monitor](../screenshots/billing-and-cost/07-cost-anomaly-detection-create-cost-monitor-b.png)
 
 This sends an alert whenever spending on any service deviates significantly from your normal pattern.
 
@@ -262,7 +298,7 @@ You now have all foundational AWS skills:
 - [x] CloudWatch alarms
 - [x] Billing and cost controls
 
-**Next:** Phase 2: Security & Blue Team  
+**Next:** Phase 2: Security & Blue Team
 Start with: `09-guardduty-setup-and-findings.md`
 
 ---
