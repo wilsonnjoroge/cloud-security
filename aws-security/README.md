@@ -140,20 +140,20 @@ This table is the single source of truth for build progress.
 
 | Status | Project | Doc |
 |---|---|---|
-| [ ] | Master Reference Guide | `00-master-reference-guide` |
+| ☑️ | Master Reference Guide | [00-master-reference-guide](./docs/00-master-reference-guide.md) |
 
 ### Phase 1: Foundations
 
 | Status | Project | Doc |
 |---|---|---|
-| ☑️ | VPC From Scratch | `01-vpc-lab-exercise` |
-| ☑️| IAM Users, Groups, Roles & Policies | `02-iam-users-groups-roles` |
-| ☑️| EC2 Instance Lifecycle | `03-ec2-instance-lifecycle` |
-| ☑️ | S3 Buckets and Policies | `04-s3-buckets-and-policies` |
-| ☑️ | Security Groups and NACLs | `05-security-groups-and-nacls` |
-| ☑️ | CloudTrail Setup | `06-cloudtrail-setup` |
-| ☑️ | CloudWatch Alarms | `07-cloudwatch-alarms` |
-| [ ] | Billing and Cost Controls | `08-billing-and-cost-controls` |
+| ☑️ | VPC From Scratch | [01-vpc-lab-exercise](./docs/01-vpc-lab-exercise.md) |
+| ☑️| IAM Users, Groups, Roles & Policies | [02-iam-users-groups-roles](./docs/01-vpc-lab-exercise.md) |
+| ☑️| EC2 Instance Lifecycle | [03-ec2-instance-lifecycle](./docs/03-ec2-instance-lifecycle.md) |
+| ☑️ | S3 Buckets and Policies | [04-s3-buckets-and-policies](./docs/04-s3-buckets-and-policies.md) |
+| ☑️ | Security Groups and NACLs | [05-security-groups-and-nacls](./docs/05-security-groups-and-nacls.md) |
+| ☑️ | CloudTrail Setup | [06-cloudtrail-setup](./docs/06-cloudtrail-setup.md) |
+| ☑️ | CloudWatch Alarms | [07-cloudwatch-alarms](./docs/07-cloudwatch-alarms.md) |
+| ☑️ | Billing and Cost Controls | [08-billing-and-cost-controls](./docs/08-billing-and-cost-controls.md) |
 
 ### Phase 2: Detection & Hardening
 
