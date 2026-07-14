@@ -38,7 +38,7 @@ A 29-document, four-phase build of an enterprise-grade AWS environment, followin
 
 Documented publicly alongside a 30-day technical series building toward **AWS Certified Security – Specialty**.
 
-→ [`aws-security/README.md`](./aws-security/README.md) for the full roadmap, doc index, and completion tracker.
+→ [`aws-security`](./aws-security/) for the full roadmap, doc index, and completion tracker.
 
 ---
 
