@@ -1,4 +1,4 @@
-# 🛡️ AWS VPC From Scratch — Practical Lab Exercise
+# 🛡️ AWS VPC From Scratch: Practical Lab Exercise
 
 > **Track:** Cybersecurity & Digital Forensics · Phase 1 of 4  
 > **Estimated cost:** under $0.50 · **Estimated time:** 60–90 minutes  
@@ -16,7 +16,7 @@ Internet Gateway (lab-igw)
     │
     ▼
 ┌─────────────────────────────────────────────┐
-│  VPC — 10.0.0.0/16                          │
+│  VPC: 10.0.0.0/16                          │
 │                                             │
 │  ┌─────────────────┐  ┌──────────────────┐  │
 │  │  Public Subnet  │  │  Private Subnet  │  │
@@ -30,7 +30,7 @@ Internet Gateway (lab-igw)
 
 ---
 
-## ⚠️ Before You Start — 3 Mandatory Safety Steps
+## ⚠️ Before You Start: 3 Mandatory Safety Steps
 
 | # | Action | Where |
 |---|--------|-------|
@@ -38,22 +38,22 @@ Internet Gateway (lab-igw)
 | 2 | Enable **CloudTrail** for all regions | CloudTrail → Create trail |
 | 3 | Confirm you are in **us-east-2** (Ohio) | Top-right region selector |
 
-> **Why CloudTrail first?** Every API call you make from this point is logged. That log becomes your first cloud forensic artifact — start it before you build anything.
+> **Why CloudTrail first?** Every API call you make from this point is logged. That log becomes your first cloud forensic artifact: start it before you build anything.
 
 ---
 
-## Step 1 — Create the VPC
+## Step 1: Create the VPC
 
 **Console path:** `VPC → Your VPCs → Create VPC`
 
-Select **VPC only** (not the wizard — you are building manually).
+Select **VPC only** (not the wizard: you are building manually).
 
 | Field | Value |
 |-------|-------|
 | Name tag | `lab-vpc` |
 | IPv4 CIDR | `10.0.0.0/16` |
 
-> **What this means:** Your VPC owns IPs `10.0.0.0` through `10.0.255.255` — 65,536 addresses total. You will carve subnets out of this range next.
+> **What this means:** Your VPC owns IPs `10.0.0.0` through `10.0.255.255`: 65,536 addresses total. You will carve subnets out of this range next.
 >
 
 ![Create VPC](../screenshots/vpc/01-create-vpc-a.png)
@@ -64,7 +64,7 @@ Select **VPC only** (not the wizard — you are building manually).
 
 ---
 
-## Step 2 — Create Two Subnets
+## Step 2: Create Two Subnets
 
 **Console path:** `VPC → Subnets → Create subnet → select lab-vpc`
 
@@ -84,7 +84,7 @@ Click **Add new subnet** before saving, then fill in the private one:
 | Availability Zone | `us-east-2a` |
 | IPv4 CIDR | `10.0.2.0/24` |
 
-> **Why two?** Public subnet = web servers (internet-reachable). Private subnet = databases, app servers (no direct internet). This separation is the foundation of secure cloud architecture. A `/24` gives you 256 addresses — AWS reserves 5, leaving 251 usable.
+> **Why two?** Public subnet = web servers (internet-reachable). Private subnet = databases, app servers (no direct internet). This separation is the foundation of secure cloud architecture. A `/24` gives you 256 addresses: AWS reserves 5, leaving 251 usable.
 
 
 ![Create Subnets](../screenshots/vpc/02-create-subnets-a.png)
@@ -94,7 +94,7 @@ Click **Add new subnet** before saving, then fill in the private one:
 ![](../screenshots/vpc/02-create-subnets-c.png)
 ---
 
-## Step 3 — Create and Attach an Internet Gateway
+## Step 3: Create and Attach an Internet Gateway
 
 **Console path:** `VPC → Internet Gateways → Create internet gateway`
 
@@ -123,7 +123,7 @@ Actions → Attach to VPC → select lab-vpc → Attach internet gateway
 
 ---
 
-## Step 4 — Create a Route Table and Add a Route
+## Step 4: Create a Route Table and Add a Route
 
 **Console path:** `VPC → Route Tables → Create route table`
 
@@ -155,7 +155,7 @@ Actions → Attach to VPC → select lab-vpc → Attach internet gateway
 ### Associate with the public subnet
 `Subnet associations tab → Edit subnet associations → select lab-public-subnet → Save`
 
-> **This is what makes a subnet public.** The private subnet keeps the default route table (local traffic only). It is purely a routing decision — not a physical difference between the two subnets.
+> **This is what makes a subnet public.** The private subnet keeps the default route table (local traffic only). It is purely a routing decision: not a physical difference between the two subnets.
 
 
 ![Create Associations](../screenshots/vpc/05-create-routes-associations-a.png)
@@ -164,7 +164,7 @@ Actions → Attach to VPC → select lab-vpc → Attach internet gateway
 
 ---
 
-## Step 5 — Create a Security Group
+## Step 5: Create a Security Group
 
 **Console path:** `EC2 → Security Groups → Create security group`
 
@@ -182,11 +182,11 @@ Actions → Attach to VPC → select lab-vpc → Attach internet gateway
 | HTTP | 80 | `0.0.0.0/0` (Anywhere-IPv4) | Web server is publicly accessible |
 
 ### Outbound rules
-Leave the default — **All traffic** outbound. Your instance needs internet access to download packages.
+Leave the default: **All traffic** outbound. Your instance needs internet access to download packages.
 
-> **About "My IP":** When you select `My IP`, AWS automatically detects and fills in your current public IP (e.g. `41.80.x.x/32`). The `/32` means exactly one address — yours only. If your IP changes later and SSH stops working, just edit the rule and select `My IP` again.
+> **About "My IP":** When you select `My IP`, AWS automatically detects and fills in your current public IP (e.g. `41.80.x.x/32`). The `/32` means exactly one address: yours only. If your IP changes later and SSH stops working, just edit the rule and select `My IP` again.
 
-> **Security concept — stateful firewall:** Security groups are stateful. Allowing inbound SSH automatically permits return traffic. You do not need an explicit outbound rule for established connections. This differs from NACLs, which are stateless (covered in Phase 2).
+> **Security concept: stateful firewall:** Security groups are stateful. Allowing inbound SSH automatically permits return traffic. You do not need an explicit outbound rule for established connections. This differs from NACLs, which are stateless (covered in Phase 2).
 
 ![Create Security Groups](../screenshots/vpc/06-create-security-group-a.png)
 
@@ -194,7 +194,7 @@ Leave the default — **All traffic** outbound. Your instance needs internet acc
 
 ---
 
-## Step 6 — Launch an EC2 Instance Into Your VPC
+## Step 6: Launch an EC2 Instance Into Your VPC
 
 **Console path:** `EC2 → Instances → Launch instance`
 
@@ -226,7 +226,7 @@ Leave the default — **All traffic** outbound. Your instance needs internet acc
 
 ### Advanced details → User data
 
-Paste this script exactly — it runs once on first boot:
+Paste this script exactly: it runs once on first boot:
 
 ```bash
 #!/bin/bash
@@ -234,20 +234,20 @@ yum update -y
 yum install -y httpd
 systemctl start httpd
 systemctl enable httpd
-echo "<h1>My VPC Lab — $(hostname)</h1>" > /var/www/html/index.html
+echo "<h1>My VPC Lab: $(hostname)</h1>" > /var/www/html/index.html
 ```
 
 Click **Launch instance**. Wait ~2 minutes for status checks to show **2/2 passed**.
 
 ---
 
-## Step 7 — Verify Everything Works
+## Step 7: Verify Everything Works
 
 ### Test the web server
 1. EC2 → Instances → click `lab-web-server` → copy **Public IPv4 address**
 2. Paste it into a browser
 
-**Expected result:** `My VPC Lab — ip-10-0-1-xxx`
+**Expected result:** `My VPC Lab: ip-10-0-1-xxx`
 
 If it loads, the full chain worked:
 ```
@@ -274,11 +274,11 @@ ssh -i lab-key.pem ec2-user@<your-public-ip>
 
 ---
 
-## Step 8 — Forensics Challenge 🔍
+## Step 8: Forensics Challenge 🔍
 
 Do this **before** cleaning up. These are your first cloud forensic artifacts.
 
-### CloudTrail — API call forensics
+### CloudTrail: API call forensics
 
 ```
 CloudTrail → Event history → filter: Event name = RunInstances
@@ -286,7 +286,7 @@ CloudTrail → Event history → filter: Event name = RunInstances
 
 You will see the exact timestamp, source IP, IAM user, and all parameters used to launch the instance. This is how you reconstruct *"who launched this and when"* during a real incident investigation.
 
-### VPC Flow Logs — network forensics
+### VPC Flow Logs: network forensics
 
 ```
 VPC → Your VPCs → select lab-vpc → Flow logs tab → Create flow log
@@ -309,9 +309,9 @@ After a few minutes, go to `CloudWatch → Log groups → /vpc/lab-flowlogs`. Yo
 
 ---
 
-## 🧹 Cleanup — Do This When Done
+## 🧹 Cleanup: Do This When Done
 
-Delete in this exact order — dependencies matter:
+Delete in this exact order: dependencies matter:
 
 ```
 1. EC2 → Instances → Terminate lab-web-server  (wait for: Terminated)
@@ -354,7 +354,7 @@ Delete in this exact order — dependencies matter:
 
 ## Next Challenge
 
-Once you can build this in the console, repeat the entire exercise using only the **AWS CLI**. That is when concepts truly solidify — and it is how real engineers and incident responders work.
+Once you can build this in the console, repeat the entire exercise using only the **AWS CLI**. That is when concepts truly solidify: and it is how real engineers and incident responders work.
 
 Ask: *"Give me the AWS CLI version of this VPC exercise"*
 
