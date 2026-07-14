@@ -1,7 +1,7 @@
 # 🌊 VPC Flow Logs: Network Traffic Analysis
 
-> **Phase 2 · Document 10 of 29**  
-> **Estimated cost:** ~$1–2/month · **Estimated time:** 60 minutes  
+> **Phase 2 · Document 10 of 29**
+> **Estimated cost:** ~$1–2/month · **Estimated time:** 60 minutes
 > **Prerequisites:** `01-vpc-from-scratch.md`, `06-cloudtrail-setup.md`
 
 ---
@@ -59,6 +59,8 @@ version account-id interface-id srcaddr dstaddr srcport dstport protocol packets
 
 **Console path:** `VPC → Your VPCs → select lab-vpc → Flow logs tab → Create flow log`
 
+![VPC Flow logs tab - empty, create flow log](../screenshots/vpc-flowlogs/01-create-vpc-flowlog-a.png)
+
 | Field | Value |
 |-------|-------|
 | Filter | All (captures ACCEPT and REJECT) |
@@ -66,6 +68,10 @@ version account-id interface-id srcaddr dstaddr srcport dstport protocol packets
 | Destination | Send to CloudWatch Logs |
 | Destination log group | `/vpc/lab-flowlogs` (create new) |
 | IAM role | Create new role → `VPCFlowLogsRole` |
+
+![Create flow log - filter, aggregation interval, destination](../screenshots/vpc-flowlogs/01-create-vpc-flowlog-b.png)
+
+![Create flow log - service role, log record format, tags](../screenshots/vpc-flowlogs/01-create-vpc-flowlog-c.png)
 
 Click **Create flow log**.
 
@@ -83,6 +89,8 @@ EC2 → Network interfaces → select the ENI of your instance
   Destination: CloudWatch Logs
   Log group:   /vpc/eni-specific-logs
 ```
+
+![Network interfaces - ENI-level flow log](../screenshots/vpc-flowlogs/02-enable-flowlogs-on-eni-a.png)
 
 ENI-level logs give you the same data but scoped to one instance: useful during an incident when you don't want to process your entire VPC's traffic.
 
