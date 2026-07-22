@@ -1,7 +1,7 @@
 # 🔒 Secrets Manager: Secure Credential Storage
 
-> **Phase 2 · Document 15 of 29**  
-> **Estimated cost:** ~$0.40/secret/month · **Estimated time:** 45 minutes  
+> **Phase 2 · Document 15 of 29**
+> **Estimated cost:** ~$0.40/secret/month · **Estimated time:** 45 minutes
 > **Prerequisites:** `02-iam-users-groups-roles.md`, `14-kms-encryption-basics.md`
 
 ---
@@ -46,7 +46,7 @@ WITHOUT Secrets Manager:               WITH Secrets Manager:
 
 ### Secret type
 
-Select: **Credentials for Amazon RDS database**  
+Select: **Credentials for Amazon RDS database**
 (Even without a real RDS instance, this shows the full flow)
 
 | Field | Value |
@@ -73,6 +73,16 @@ Leave disabled for now: we configure it in Step 4.
 
 Click **Store**.
 
+![Store a new secret](../screenshots/secret-manager/01-create-a-secret-a.png)
+
+![Secret type and credentials](../screenshots/secret-manager/01-create-a-secret-b.png)
+
+![Secret name and description](../screenshots/secret-manager/01-create-a-secret-c.png)
+
+![Encryption key selection](../screenshots/secret-manager/01-create-a-secret-d.png)
+
+![Secret stored, confirmation](../screenshots/secret-manager/01-create-a-secret-e.png)
+
 ---
 
 ## Step 2: Store an API Key
@@ -89,6 +99,10 @@ Secrets Manager → Store a new secret
 
   Secret name: lab1/api/external-service
 ```
+
+![Create API key secret](../screenshots/secret-manager/02-create-api-key-secret-a.png)
+
+![API key secret stored](../screenshots/secret-manager/02-create-api-key-secret-b.png)
 
 ---
 
@@ -145,6 +159,8 @@ export DB_PASSWORD=$(aws secretsmanager get-secret-value \
   --output text | jq -r '.password')
 ```
 
+![Retrieve secrets via AWS CLI](../screenshots/secret-manager/03-retrieve-secrets-in-aws-cli.png)
+
 > **Important:** Even injecting to environment variables is risky: they can be read by any process on the instance and appear in crash dumps. The safest approach is to retrieve the secret at the moment it is needed and not store it anywhere.
 
 ---
@@ -160,6 +176,10 @@ Secrets Manager → lab/database/credentials → Rotation → Edit rotation
   Rotation function: Create a new Lambda function
   Lambda function name: SecretsManagerRDSRotation
 ```
+
+![Enable rotation](../screenshots/secret-manager/04-enable-rotation-a.png)
+
+![Rotation configured](../screenshots/secret-manager/04-enable-rotation-b.png)
 
 How rotation works:
 
@@ -204,6 +224,8 @@ By default only the secret creator can access it. Grant access via IAM policy:
 
 Attach this policy to `lab-ec2-s3-read-role` so your EC2 instance can retrieve the secret.
 
+![IAM policy allowing read access to a specific secret](../screenshots/secret-manager/06-enable-read-specific-secret-.png)
+
 ### Resource-based policy on the secret
 
 You can also attach a policy directly to the secret:
@@ -227,6 +249,10 @@ Secrets Manager → lab1/database/credentials → Resource permissions → Edit
   ]
 }
 ```
+
+![Resource-based policy on the secret](../screenshots/secret-manager/05-resource-based-secret-a.png)
+
+![Resource-based policy saved](../screenshots/secret-manager/05-resource-based-secret-b.png)
 
 ---
 
@@ -254,6 +280,8 @@ aws secretsmanager get-secret-value \
   --version-stage AWSPREVIOUS
 ```
 
+![Secret versioning, get current version via CLI](../screenshots/secret-manager/07-secret-versioning-get-current-version-aws-cli.png)
+
 ---
 
 ## Step 7: Audit Secret Access via CloudTrail
@@ -273,6 +301,8 @@ fields eventTime, userIdentity.userName, requestParameters.secretId, sourceIPAdd
 | limit 50
 ```
 
+![Query accessed secrets in CloudTrail](../screenshots/secret-manager/08-query-acceesed-secrets-in-cloudtrail.png)
+
 Alert on unexpected secret access:
 
 ```
@@ -282,6 +312,8 @@ Pattern: { ($.eventName = "GetSecretValue") &&
 Metric: SecretAccess
 Alarm: > 10 accesses in 5 minutes (anomalous retrieval)
 ```
+
+![CloudWatch alarm when secrets accessed](../screenshots/secret-manager/08-cloudtrail-alarm-when-secrets-accessed.png)
 
 > In a breach, attackers often enumerate and dump all secrets from Secrets Manager after gaining IAM access. Unusual `GetSecretValue` volume across multiple secrets is a key indicator of credential harvesting.
 
@@ -372,7 +404,7 @@ You now have a full blue team / security operations skill set:
 - [x] KMS: encryption key management
 - [x] Secrets Manager: credential security
 
-**Next:** Phase 3: Cloud Forensics & Incident Response  
+**Next:** Phase 3: Cloud Forensics & Incident Response
 Start with: `16-ebs-snapshot-forensics.md`
 
 ---
