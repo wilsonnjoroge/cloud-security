@@ -1,0 +1,12 @@
+# Copy this file to terraform.tfvars and fill in your own values.
+
+aws_region = "us-east-1"
+public_az  = "us-east-1a"
+private_az = "us-east-1b"
+
+project_name = "lab2"
+
+# Required: find yours with `curl -s https://checkip.amazonaws.com`
+# my_ip_cidr = "1.2.3.4/32"
+
+instance_type = "t3.micro"
