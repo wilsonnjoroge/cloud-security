@@ -1,1 +1,12 @@
-./*.txt
+
+# Terraform
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+crash.*.log
+
+# Generated SSH keys
+*.pem
