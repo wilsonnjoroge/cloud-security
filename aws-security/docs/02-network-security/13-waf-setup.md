@@ -59,13 +59,13 @@ WAF attaches to an ALB, CloudFront, or API Gateway: not directly to EC2. Create 
 | Subnets | Select both public subnets (need at least 2 AZs) |
 | Security group | `lab1-web-server-sg ` |
 
-![Create ALB](../screenshots/waf/01-create-alb-a.png)
+![Create ALB](../../../screenshots/02-network-security/02-network-security/waf/01-create-alb-a.png)
 
-![Create ALB](../screenshots/waf/01-create-alb-b.png)
+![Create ALB](../../screenshots/02-network-security/waf/01-create-alb-b.png)
 
-![Create ALB](../screenshots/waf/01-create-alb-c.png)
+![Create ALB](../../screenshots/02-network-security/waf/01-create-alb-c.png)
 
-![Create ALB](../screenshots/waf/01-create-alb-d.png)
+![Create ALB](../../screenshots/02-network-security/waf/01-create-alb-d.png)
 
 ### Create a target group
 
@@ -77,13 +77,13 @@ Port:              80
 VPC:               lab1-vpc
 ```
 
-![Create target group](../screenshots/waf/02-create-target-group-a.png)
+![Create target group](../../screenshots/02-network-security/waf/02-create-target-group-a.png)
 
-![Create target group](../screenshots/waf/02-create-target-group-b.png)
+![Create target group](../../screenshots/02-network-security/waf/02-create-target-group-b.png)
 
 Register your `lab1-web-server` instance as a target.
 
-![Register instance to target group](../screenshots/waf/02-create-target-group-c-register-instance.png)
+![Register instance to target group](../../screenshots/02-network-security/waf/02-create-target-group-c-register-instance.png)
 
 Complete the ALB creation. Note the ALB DNS name: you will use this to access your site.
 
@@ -100,11 +100,11 @@ Complete the ALB creation. Note the ALB DNS name: you will use this to access yo
 | Region | us-east-2 |
 | Associated resources | Select `lab1-alb` |
 
-![Create web ACL](../screenshots/waf/03-create-web-acls-a.png)
+![Create web ACL](../../screenshots/02-network-security/waf/03-create-web-acls-a.png)
 
-![Create web ACL](../screenshots/waf/03-create-web-acls-b.png)
+![Create web ACL](../../screenshots/02-network-security/waf/03-create-web-acls-b.png)
 
-![Create web ACL](../screenshots/waf/03-create-web-acls-c.png)
+![Create web ACL](../../screenshots/02-network-security/waf/03-create-web-acls-c.png)
 
 ---
 
@@ -114,11 +114,11 @@ AWS maintains pre-built rule groups that cover the most common attacks. Add thes
 
 **On the Add rules page → Add managed rule groups**
 
-![Add managed rule groups](../screenshots/waf/04-create-rules-groups-a.png)
+![Add managed rule groups](../../screenshots/02-network-security/waf/04-create-rules-groups-a.png)
 
-![Add managed rule groups](../screenshots/waf/04-create-rules-groups-b.png)
+![Add managed rule groups](../../screenshots/02-network-security/waf/04-create-rules-groups-b.png)
 
-![Add managed rule groups](../screenshots/waf/04-create-rules-groups-c.png)
+![Add managed rule groups](../../screenshots/02-network-security/waf/04-create-rules-groups-c.png)
 
 ### Rule group 1: Core Rule Set (CRS)
 
@@ -134,7 +134,7 @@ Protects against:
 - Remote file inclusion (RFI)
 - HTTP protocol violations
 
-![Core rule set](../screenshots/waf/04-create-rules-groups-core-rule-sets.png)
+![Core rule set](../../screenshots/02-network-security/waf/04-create-rules-groups-core-rule-sets.png)
 
 ### Rule group 2: Known Bad Inputs
 
@@ -148,7 +148,7 @@ Protects against:
 - SSRF attempts via request body
 - JavaDeserializationExploits
 
-![Known bad inputs](../screenshots/waf/04-create-rules-groups-known-bad-inputs.png)
+![Known bad inputs](../../screenshots/02-network-security/waf/04-create-rules-groups-known-bad-inputs.png)
 
 ### Rule group 3: Amazon IP Reputation List
 
@@ -162,7 +162,7 @@ Blocks requests from:
 - IPs used in prior attacks (AWS threat intelligence)
 - Tor exit nodes
 
-![IP reputation list](../screenshots/waf/04-create-rules-groups-ip-reputation-list.png)
+![IP reputation list](../../screenshots/02-network-security/waf/04-create-rules-groups-ip-reputation-list.png)
 
 ### Rule group 4: Anonymous IP List
 
@@ -178,7 +178,7 @@ Blocks requests from:
 
 > This is useful for blocking anonymized attack traffic. Be careful: it may also block legitimate users using VPNs.
 
-![Anonymous IP list](../screenshots/waf/04-create-rules-groups-anonymous-ip-list.png)
+![Anonymous IP list](../../screenshots/02-network-security/waf/04-create-rules-groups-anonymous-ip-list.png)
 
 **Default action:** Allow (traffic not matching any block rule passes through)
 
@@ -188,9 +188,9 @@ Click **Create web ACL**.
 
 ## Step 4: Create Custom Rules
 
-![Create custom rules](../screenshots/waf/05-create-custom-rules-a.png)
+![Create custom rules](../../screenshots/02-network-security/waf/05-create-custom-rules-a.png)
 
-![Create custom rules](../screenshots/waf/05-create-custom-rules-b.png)
+![Create custom rules](../../screenshots/02-network-security/waf/05-create-custom-rules-b.png)
 
 ### Rule 1: Block a specific country
 
@@ -208,7 +208,7 @@ Priority:   1
 
 > Use this carefully: geo-blocking affects legitimate users. More useful as an incident response measure: "Block all traffic from country X while we contain an attack."
 
-![Block certain countries](../screenshots/waf/05-create-custom-rules-block-certain-countries.png)
+![Block certain countries](../../screenshots/02-network-security/waf/05-create-custom-rules-block-certain-countries.png)
 
 ### Rule 2: Rate limiting (brute force protection)
 
@@ -222,7 +222,7 @@ Priority:   2
 
 Any single IP sending more than 1000 requests in 5 minutes gets blocked automatically. This stops brute-force attacks and scraping.
 
-![Rate limit rule](../screenshots/waf/05-create-custom-rules-rte-limit.png)
+![Rate limit rule](../../screenshots/02-network-security/waf/05-create-custom-rules-rte-limit.png)
 
 ### Rule 3: Block bad user agents
 
@@ -266,11 +266,11 @@ WAF → lab1-web-acl → Logging and metrics → Enable logging
   Log group: aws-waf-logs-lab1-web-acl
 ```
 
-![Enable logging](../screenshots/waf/06-enable-logging-a.png)
+![Enable logging](../../screenshots/02-network-security/waf/06-enable-logging-a.png)
 
-![Enable logging](../screenshots/waf/06-enable-logging-b.png)
+![Enable logging](../../screenshots/02-network-security/waf/06-enable-logging-b.png)
 
-![Enable logging](../screenshots/waf/06-enable-logging-c.png)
+![Enable logging](../../screenshots/02-network-security/waf/06-enable-logging-c.png)
 
 ### Query WAF logs
 
@@ -305,7 +305,7 @@ WAF → lab1-web-acl → Rules → select a rule → Edit
   Action: Count (instead of Block)
 ```
 
-![WAF in count mode for testing](../screenshots/waf/07-waf-in-count-mode-for-testing.png)
+![WAF in count mode for testing](../../screenshots/02-network-security/waf/07-waf-in-count-mode-for-testing.png)
 
 After 24–48 hours of count mode, review the logs. If no legitimate traffic is being counted, switch to Block.
 
@@ -341,7 +341,7 @@ curl -G \
 # Expected response: 403 Forbidden
 ```
 
-![Testing SQL injection](../screenshots/waf/08-testing-sqlinjection.png)
+![Testing SQL injection](../../screenshots/02-network-security/waf/08-testing-sqlinjection.png)
 
 ### Test XSS blocking
 
@@ -353,7 +353,7 @@ curl -G \
 # Expected response: 403 Forbidden
 ```
 
-![Testing XSS](../screenshots/waf/08-testing-cxx.png)
+![Testing XSS](../../screenshots/02-network-security/waf/08-testing-cxx.png)
 
 ### Test rate limiting
 
@@ -372,7 +372,7 @@ CloudWatch → Logs Insights → aws-waf-logs-lab1-web-acl
 
 You should see BLOCK entries for your test requests with the matching rule ID.
 
-![Confirm from CloudWatch logs](../screenshots/waf/09-confirm-from-cloudwatch-logs.png)
+![Confirm from CloudWatch logs](../../screenshots/02-network-security/waf/09-confirm-from-cloudwatch-logs.png)
 
 ---
 

@@ -59,7 +59,7 @@ version account-id interface-id srcaddr dstaddr srcport dstport protocol packets
 
 **Console path:** `VPC → Your VPCs → select lab-vpc → Flow logs tab → Create flow log`
 
-![VPC Flow logs tab - empty, create flow log](../screenshots/vpc-flowlogs/01-create-vpc-flowlog-a.png)
+![VPC Flow logs tab - empty, create flow log](../../screenshots/02-network-security/vpc-flowlogs/01-create-vpc-flowlog-a.png)
 
 | Field | Value |
 |-------|-------|
@@ -69,9 +69,9 @@ version account-id interface-id srcaddr dstaddr srcport dstport protocol packets
 | Destination log group | `/vpc/lab-flowlogs` (create new) |
 | IAM role | Create new role → `VPCFlowLogsRole` |
 
-![Create flow log - filter, aggregation interval, destination](../screenshots/vpc-flowlogs/01-create-vpc-flowlog-b.png)
+![Create flow log - filter, aggregation interval, destination](../../screenshots/02-network-security/vpc-flowlogs/01-create-vpc-flowlog-b.png)
 
-![Create flow log - service role, log record format, tags](../screenshots/vpc-flowlogs/01-create-vpc-flowlog-c.png)
+![Create flow log - service role, log record format, tags](../../screenshots/02-network-security/vpc-flowlogs/01-create-vpc-flowlog-c.png)
 
 Click **Create flow log**.
 
@@ -90,7 +90,7 @@ EC2 → Network interfaces → select the ENI of your instance
   Log group:   /vpc/eni-specific-logs
 ```
 
-![Network interfaces - ENI-level flow log](../screenshots/vpc-flowlogs/02-enable-flowlogs-on-eni-a.png)
+![Network interfaces - ENI-level flow log](../../screenshots/02-network-security/vpc-flowlogs/02-enable-flowlogs-on-eni-a.png)
 
 ENI-level logs give you the same data but scoped to one instance: useful during an incident when you don't want to process your entire VPC's traffic.
 

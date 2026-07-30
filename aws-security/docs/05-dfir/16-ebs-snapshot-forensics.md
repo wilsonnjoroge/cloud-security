@@ -38,7 +38,7 @@ First, create a "compromised" instance with evidence planted on it.
 
 Launch an EC2 instance (`lab11-compromised`) in your VPC.
 
-![Launch compromised instance](../screenshots/snapshot-forensics/01-launch-compromised-instance.png)
+![Launch compromised instance](../../screenshots/05-dfir/snapshot-forensics/01-launch-compromised-instance.png)
 
 SSH in and plant some evidence:
 
@@ -61,7 +61,7 @@ logger -p auth.info "Failed password for root from 198.51.100.42 port 4444 ssh2"
 logger -p auth.info "Accepted password for root from 198.51.100.42 port 4444 ssh2"
 ```
 
-![Simulate attack](../screenshots/snapshot-forensics/02-simulate-attack.png)
+![Simulate attack](../../screenshots/05-dfir/snapshot-forensics/02-simulate-attack.png)
 
 Now **stop the instance**: never take a snapshot of a running instance for forensics (data may be inconsistent).
 
@@ -87,9 +87,9 @@ EC2 → Instances → lab11-compromised → Storage tab
     Hash    = (you will add this after verification)
 ```
 
-![Create snapshot - select volume](../screenshots/snapshot-forensics/03-create-snapshot-a.png)
-![Create snapshot - description and tags](../screenshots/snapshot-forensics/03-create-snapshot-b.png)
-![Create snapshot - confirmation](../screenshots/snapshot-forensics/03-create-snapshot-c.png)
+![Create snapshot - select volume](../../screenshots/05-dfir/snapshot-forensics/03-create-snapshot-a.png)
+![Create snapshot - description and tags](../../screenshots/05-dfir/snapshot-forensics/03-create-snapshot-b.png)
+![Create snapshot - confirmation](../../screenshots/05-dfir/snapshot-forensics/03-create-snapshot-c.png)
 
 Note the snapshot ID: `snap-xxxxxxxxxxxxxxxxx`
 
@@ -105,7 +105,7 @@ aws ec2 describe-snapshots \
 
 Wait for `State: completed` before proceeding.
 
-![Verify snapshot details](../screenshots/snapshot-forensics/04-verify-snapshot-details.png)
+![Verify snapshot details](../../screenshots/05-dfir/snapshot-forensics/04-verify-snapshot-details.png)
 
 ---
 
@@ -126,7 +126,7 @@ EC2 → Launch instance
                     Outbound: All traffic
 ```
 
-![Launch forensic workstation](../screenshots/snapshot-forensics/05-launch-forensics-instance.png)
+![Launch forensic workstation](../../screenshots/05-dfir/snapshot-forensics/05-launch-forensics-instance.png)
 
 ### Install forensic tools
 
@@ -157,7 +157,7 @@ sudo apt install -y \
 pip3 install dfvfs plaso
 ```
 
-![Install forensic tools](../screenshots/snapshot-forensics/06-install-tools.png)
+![Install forensic tools](../../screenshots/05-dfir/snapshot-forensics/06-install-tools.png)
 
 ---
 
@@ -175,8 +175,8 @@ EC2 → Snapshots → select your forensic snapshot → Actions → Create volum
     CaseID  = IR-2024-001
 ```
 
-![Create volume from snapshot - configuration](../screenshots/snapshot-forensics/07-create-volume-from-compromised-snapshot-a.png)
-![Create volume from snapshot - confirmation](../screenshots/snapshot-forensics/07-create-volume-from-compromised-snapshot-b.png)
+![Create volume from snapshot - configuration](../../screenshots/05-dfir/snapshot-forensics/07-create-volume-from-compromised-snapshot-a.png)
+![Create volume from snapshot - confirmation](../../screenshots/05-dfir/snapshot-forensics/07-create-volume-from-compromised-snapshot-b.png)
 
 Note the new volume ID: `vol-xxxxxxxxxxxxxxxxx`
 
@@ -190,8 +190,8 @@ EC2 → Volumes → select the evidence volume → Actions → Attach volume
   Device name: /dev/sdf
 ```
 
-![Attach volume to forensic instance - selection](../screenshots/snapshot-forensics/08-attach-volume-to-forensics-instance-a.png)
-![Attach volume to forensic instance - confirmation](../screenshots/snapshot-forensics/08-attach-volume-to-forensics-instance-b.png)
+![Attach volume to forensic instance - selection](../../screenshots/05-dfir/snapshot-forensics/08-attach-volume-to-forensics-instance-a.png)
+![Attach volume to forensic instance - confirmation](../../screenshots/05-dfir/snapshot-forensics/08-attach-volume-to-forensics-instance-b.png)
 
 ---
 
@@ -216,7 +216,7 @@ sudo mount -o ro,noload,noexec,nosuid /dev/nvme1n1p1 /mnt/evidence
 mount | grep evidence
 ```
 
-![Mount evidence volume as read-only](../screenshots/snapshot-forensics/09-mount-as-read-only.png)
+![Mount evidence volume as read-only](../../screenshots/05-dfir/snapshot-forensics/09-mount-as-read-only.png)
 
 > **Read-only mount is non-negotiable.** Writing to evidence changes it. `ro` flag ensures no accidental modifications. `noexec` prevents accidental execution of malicious binaries. `nosuid` prevents privilege escalation via setuid files.
 
@@ -258,11 +258,11 @@ find /mnt/evidence -perm -002 -type f -ls 2>/dev/null
 find /mnt/evidence -name ".*" -ls 2>/dev/null
 ```
 
-![File system analysis - directory listing](../screenshots/snapshot-forensics/10-file-system-analysis-a.png)
-![File system analysis - recently modified files](../screenshots/snapshot-forensics/10-file-system-analysis-b.png)
-![File system analysis - SUID/SGID files](../screenshots/snapshot-forensics/10-file-system-analysis-c.png)
-![File system analysis - world-writable files](../screenshots/snapshot-forensics/10-file-system-analysis-d.png)
-![File system analysis - hidden files](../screenshots/snapshot-forensics/10-file-system-analysis-e.png)
+![File system analysis - directory listing](../../screenshots/05-dfir/snapshot-forensics/10-file-system-analysis-a.png)
+![File system analysis - recently modified files](../../screenshots/05-dfir/snapshot-forensics/10-file-system-analysis-b.png)
+![File system analysis - SUID/SGID files](../../screenshots/05-dfir/snapshot-forensics/10-file-system-analysis-c.png)
+![File system analysis - world-writable files](../../screenshots/05-dfir/snapshot-forensics/10-file-system-analysis-d.png)
+![File system analysis - hidden files](../../screenshots/05-dfir/snapshot-forensics/10-file-system-analysis-e.png)
 
 ---
 
@@ -289,10 +289,10 @@ cat /mnt/evidence/var/log/apache2/access.log 2>/dev/null
 cat /mnt/evidence/var/log/nginx/access.log 2>/dev/null
 ```
 
-![Log analysis - auth log](../screenshots/snapshot-forensics/11-log-analysis-a.png)
-![Log analysis - bash history](../screenshots/snapshot-forensics/11-log-analysis-b.png)
-![Log analysis - cron jobs](../screenshots/snapshot-forensics/11-log-analysis-c.png)
-![Log analysis - system log](../screenshots/snapshot-forensics/11-log-analysis-d.png)
+![Log analysis - auth log](../../screenshots/05-dfir/snapshot-forensics/11-log-analysis-a.png)
+![Log analysis - bash history](../../screenshots/05-dfir/snapshot-forensics/11-log-analysis-b.png)
+![Log analysis - cron jobs](../../screenshots/05-dfir/snapshot-forensics/11-log-analysis-c.png)
+![Log analysis - system log](../../screenshots/05-dfir/snapshot-forensics/11-log-analysis-d.png)
 
 ---
 
@@ -342,8 +342,8 @@ find /mnt/evidence -name "authorized_keys" -exec cat {} \;
 find /mnt/evidence/tmp -type f -executable -ls
 ```
 
-![Indicators of compromise - IP and payload search](../screenshots/snapshot-forensics/12-indicators-of-comromise-a.png)
-![Indicators of compromise - backdoor and persistence](../screenshots/snapshot-forensics/12-indicators-of-compromise-b.png)
+![Indicators of compromise - IP and payload search](../../screenshots/05-dfir/snapshot-forensics/12-indicators-of-comromise-a.png)
+![Indicators of compromise - backdoor and persistence](../../screenshots/05-dfir/snapshot-forensics/12-indicators-of-compromise-b.png)
 
 ---
 
@@ -360,7 +360,7 @@ unzip master.zip
 sudo yara -r yara-rules-master/malware/*.yar /mnt/evidence/ 2>/dev/null
 ```
 
-![Scan with YARA](../screenshots/snapshot-forensics/13-scan-with-yara.png)
+![Scan with YARA](../../screenshots/05-dfir/snapshot-forensics/13-scan-with-yara.png)
 
 ---
 
@@ -412,7 +412,7 @@ cat > /home/ubuntu/forensic-report-IR-2024-001.md << 'EOF'
 EOF
 ```
 
-![Document the findings](../screenshots/snapshot-forensics/14-document-the-findings.png)
+![Document the findings](../../screenshots/05-dfir/snapshot-forensics/14-document-the-findings.png)
 
 ---
 

@@ -14,7 +14,7 @@ EC2 (Elastic Compute Cloud) is AWS's virtual machine service. Every time you nee
 AMI (template) + Instance type (hardware) + Network (VPC/subnet) + Storage (EBS) = EC2 Instance
 ```
 
-> **Forensics relevance:** EC2 instances are the primary target in cloud attacks and the primary source of forensic evidence — disk images, memory, logs, network traffic all originate here.
+> **Forensics relevance:** EC2 instances are the primary target in cloud attacks and the primary source of forensic evidence disk images, memory, logs, network traffic all originate here.
 
 ---
 
@@ -22,7 +22,7 @@ AMI (template) + Instance type (hardware) + Network (VPC/subnet) + Storage (EBS)
 
 | Concept | What it is |
 |---------|-----------|
-| **AMI** | Amazon Machine Image — the OS template used to launch an instance |
+| **AMI** | Amazon Machine Image the OS template used to launch an instance |
 | **Instance type** | The hardware spec (CPU, RAM, network) |
 | **EBS volume** | The virtual hard disk attached to the instance |
 | **Key pair** | SSH public/private key for remote access |
@@ -49,7 +49,7 @@ Pending → Running → Stopping → Stopped → Starting → Running
 
 ---
 
-## Step 1 — Launch an EC2 Instance (Full Manual Method)
+## Step 1 Launch an EC2 Instance (Full Manual Method)
 
 **Console path:** `EC2 → Instances → Launch instance`
 
@@ -62,7 +62,7 @@ Add a tag: `Key = Environment` · `Value = Lab`
 
 > Tags are critical in real environments. They are used for cost allocation, access control via IAM conditions, and filtering resources during incident response.
 
-![Launch EC2 Instance](../screenshots/ec2/01-ec2-launch-instance.png)
+![Launch EC2 Instance](../../screenshots/01-foundations/ec2/01-ec2-launch-instance.png)
 
 
 
@@ -76,19 +76,19 @@ Choose **Amazon Linux 2023** (free tier eligible).
 
 > For your cybersecurity path you will also work with Ubuntu (penetration testing tools) and Windows Server (Active Directory labs). For now, Amazon Linux 2023 is the standard.
 
-![Launch EC2 Instance](../screenshots/ec2/02-ec2-name-and-ami.png)
+![Launch EC2 Instance](../../screenshots/01-foundations/ec2/02-ec2-name-and-ami.png)
 
 
 ### Instance type
-Select `t2.micro` — 1 vCPU, 1 GiB RAM, free tier eligible.
+Select `t2.micro` 1 vCPU, 1 GiB RAM, free tier eligible.
 
 ```
 Instance type families (memorize these):
-  t  → general purpose burstable     (t2, t3) — dev and test
-  m  → general purpose balanced      (m5, m6) — production workloads
-  c  → compute optimized             (c5, c6) — high CPU tasks
-  r  → memory optimized              (r5, r6) — databases, analytics
-  i  → storage optimized             (i3, i4) — high IOPS workloads
+  t  → general purpose burstable     (t2, t3) dev and test
+  m  → general purpose balanced      (m5, m6) production workloads
+  c  → compute optimized             (c5, c6) high CPU tasks
+  r  → memory optimized              (r5, r6) databases, analytics
+  i  → storage optimized             (i3, i4) high IOPS workloads
 ```
 
 ### Key pair
@@ -110,11 +110,11 @@ chmod 400 lab-key.pem
 ### Storage
 Leave default: **8 GiB gp3 EBS volume**.
 
-> `gp3` is the current generation general-purpose SSD. Always prefer `gp3` over `gp2` — same performance, lower cost.
+> `gp3` is the current generation general-purpose SSD. Always prefer `gp3` over `gp2` same performance, lower cost.
 
-![Launch EC2 Instance](../screenshots/ec2/03-ec2-image-key-vpc-networking.png)
+![Launch EC2 Instance](../../screenshots/01-foundations/ec2/03-ec2-image-key-vpc-networking.png)
 
-![Launch EC2 Instance](../screenshots/ec2/04-ec2-security-groups.png)
+![Launch EC2 Instance](../../screenshots/01-foundations/ec2/04-ec2-security-groups.png)
 
 ### User data (Advanced details)
 
@@ -124,29 +124,29 @@ sudo yum update -y
 sudo yum install -y httpd wget curl net-tools
 sudo systemctl start httpd
 sudo systemctl enable httpd
-sudo bash -c 'echo "<h1>EC2 Lab — $(hostname -f)</h1>" > /var/www/html/index.html'
+sudo bash -c 'echo "<h1>EC2 Lab $(hostname -f)</h1>" > /var/www/html/index.html'
 ```
 
 Click **Launch instance**.
 
-![Launch EC2 Instance](../screenshots/ec2/05-ec2-user-data-and-launch.png)
+![Launch EC2 Instance](../../screenshots/01-foundations/ec2/05-ec2-user-data-and-launch.png)
 
-![Launch EC2 Instance](../screenshots/ec2/06-ec2-running.png)
+![Launch EC2 Instance](../../screenshots/01-foundations/ec2/06-ec2-running.png)
 
 
 ---
 
-## Step 2 — Connect to Your Instance
+## Step 2 Connect to Your Instance
 
-### Method 1 — SSH from terminal
+### Method 1 SSH from terminal
 
 ```bash
 ssh -i lab-key.pem ec2-user@<public-ip>
 ```
 
-![Connect EC2 Instance](../screenshots/ec2/03-ec2-image-key-vpc-networking.png)
+![Connect EC2 Instance](../../screenshots/01-foundations/ec2/03-ec2-image-key-vpc-networking.png)
 
-### Method 2 — EC2 Instance Connect (browser-based)
+### Method 2 EC2 Instance Connect (browser-based)
 
 ```
 EC2 → Instances → select instance → Connect → EC2 Instance Connect → Connect
@@ -154,30 +154,30 @@ EC2 → Instances → select instance → Connect → EC2 Instance Connect → C
 
 No key needed. Works directly in the browser.
 
-![Connect EC2 Instance](../screenshots/ec2/07-access-instance-from-web-connect.png)
+![Connect EC2 Instance](../../screenshots/01-foundations/ec2/07-access-instance-from-web-connect.png)
 
-![Connect EC2 Instance](../screenshots/ec2/07-access-instance-from-web-connect-b.png)
+![Connect EC2 Instance](../../screenshots/01-foundations/ec2/07-access-instance-from-web-connect-b.png)
 
-![Connect EC2 Instance](../screenshots/ec2/07-access-instance-from-web-connect-c.png)
+![Connect EC2 Instance](../../screenshots/01-foundations/ec2/07-access-instance-from-web-connect-c.png)
 
 
-### Method 3 — AWS Systems Manager Session Manager
+### Method 3 AWS Systems Manager Session Manager
 
 ```
 EC2 → Instances → select instance → Connect → Session Manager → Connect
 ```
 
-No open port 22 required. No key pair needed. All session activity is logged to CloudTrail — the most secure and auditable connection method.
+No open port 22 required. No key pair needed. All session activity is logged to CloudTrail the most secure and auditable connection method.
 
-> **Forensics note:** Session Manager logs every command typed during a session. This is evidence-grade logging — if an attacker uses Session Manager, every command they ran is recorded.
+> **Forensics note:** Session Manager logs every command typed during a session. This is evidence-grade logging if an attacker uses Session Manager, every command they ran is recorded.
 
-![Connect EC2 Instance](../screenshots/ec2/07-access-instance-from-web-ssmm-a.png)
+![Connect EC2 Instance](../../screenshots/01-foundations/ec2/07-access-instance-from-web-ssmm-a.png)
 
-![Connect EC2 Instance](../screenshots/ec2/07-access-instance-from-web-ssmm-b.png)
+![Connect EC2 Instance](../../screenshots/01-foundations/ec2/07-access-instance-from-web-ssmm-b.png)
 
 ---
 
-## Step 3 — Explore Instance Metadata
+## Step 3 Explore Instance Metadata
 
 From inside your instance, run:
 
@@ -192,7 +192,7 @@ curl http://169.254.169.254/latest/meta-data/public-ipv4
 curl http://169.254.169.254/latest/meta-data/iam/security-credentials/
 ```
 
-![Connect EC2 Instance](../screenshots/ec2/08-get-instance-id-ip-and-iam.png)
+![Connect EC2 Instance](../../screenshots/01-foundations/ec2/08-get-instance-id-ip-and-iam.png)
 
 
 > ⚠️ **Security critical:** The metadata endpoint at `169.254.169.254` is a major attack vector. If an attacker can make your instance send a request to this URL (via SSRF), they can steal IAM credentials. This is covered in depth in `24-imds-attack-and-hardening.md`. For now, enforce IMDSv2:
@@ -203,11 +203,11 @@ EC2 → Instances → select instance → Actions → Instance settings
 → IMDSv2: Required
 ```
 
-![Connect EC2 Instance](../screenshots/ec2/08-get-instance-id-ip-and-iam-after-enforcing-IMDSx2.png)
+![Connect EC2 Instance](../../screenshots/01-foundations/ec2/08-get-instance-id-ip-and-iam-after-enforcing-IMDSx2.png)
 
 ---
 
-## Step 4 — Manage Storage (EBS)
+## Step 4 Manage Storage (EBS)
 
 ### Add a second EBS volume
 
@@ -225,9 +225,9 @@ Select the new volume → Actions → Attach volume
 → select lab-ec2-main → device name /dev/sdf
 ```
 
-![Create EBS](../screenshots/ec2/10-create-ebs-a.png)
+![Create EBS](../../screenshots/01-foundations/ec2/10-create-ebs-a.png)
 
-![Create EBS](../screenshots/ec2/10-create-ebs-a.png)
+![Create EBS](../../screenshots/01-foundations/ec2/10-create-ebs-a.png)
 
 
 ### Mount the volume from inside the instance
@@ -236,7 +236,7 @@ Select the new volume → Actions → Attach volume
 # Check the volume is attached
 lsblk
 
-# Format it (only do this once — formatting erases data)
+# Format it (only do this once formatting erases data)
 sudo mkfs.ext4 /dev/nvme1n1
 
 # Create a mount point
@@ -251,15 +251,15 @@ df -h
 
 > **Forensics relevance:** In cloud forensics you acquire EBS snapshots (covered in `16-ebs-snapshot-forensics.md`) instead of pulling physical drives. Understanding how volumes attach and mount is the foundation of that process.
 
-![Attach the EBS to the EC2 Instance](../screenshots/ec2/11-attach-ebs-to-ec2-a.png)
+![Attach the EBS to the EC2 Instance](../../screenshots/01-foundations/ec2/11-attach-ebs-to-ec2-a.png)
 
-![Attach the EBS to the EC2 Instance](../screenshots/ec2/11-attach-ebs-to-ec2-b.png)
+![Attach the EBS to the EC2 Instance](../../screenshots/01-foundations/ec2/11-attach-ebs-to-ec2-b.png)
 
-![Mount the EBS](../screenshots/ec2/12-mount-ebs.png)
+![Mount the EBS](../../screenshots/01-foundations/ec2/12-mount-ebs.png)
 
 ---
 
-## Step 5 — Create an EBS Snapshot
+## Step 5 Create an EBS Snapshot
 
 Snapshots are point-in-time backups of EBS volumes stored in S3 (managed by AWS).
 
@@ -268,17 +268,17 @@ EC2 → Volumes → select your root volume → Actions → Create snapshot
   Description: lab-snapshot-before-changes
 ```
 
-> **Forensics use:** When investigating a compromised instance, you take a snapshot of the EBS volume first — preserving evidence before touching anything. You then create a new volume from that snapshot and attach it to a clean forensic instance for analysis. Never analyze a live compromised instance directly.
+> **Forensics use:** When investigating a compromised instance, you take a snapshot of the EBS volume first preserving evidence before touching anything. You then create a new volume from that snapshot and attach it to a clean forensic instance for analysis. Never analyze a live compromised instance directly.
 
-![Take Snapshot](../screenshots/ec2/13-take-ebs-snapshot-a.png)
+![Take Snapshot](../../screenshots/01-foundations/ec2/13-take-ebs-snapshot-a.png)
 
-![Take Snapshot](../screenshots/ec2/13-take-ebs-snapshot-b.png)
+![Take Snapshot](../../screenshots/01-foundations/ec2/13-take-ebs-snapshot-b.png)
 
-![Take Snapshot](../screenshots/ec2/13-take-ebs-snapshot-c.png)
+![Take Snapshot](../../screenshots/01-foundations/ec2/13-take-ebs-snapshot-c.png)
 
 ---
 
-## Step 6 — Stop, Start, and Resize
+## Step 6 Stop, Start, and Resize
 
 ### Stop the instance
 
@@ -288,7 +288,7 @@ EC2 → Instances → select instance → Instance state → Stop instance
 
 When stopped: compute billing stops, EBS billing continues, public IP is released (unless using Elastic IP).
 
-![IP before Stopping](../screenshots/ec2/14-ec2-type-and-ip-before-change.png)
+![IP before Stopping](../../screenshots/01-foundations/ec2/14-ec2-type-and-ip-before-change.png)
 
 ### Change the instance type
 
@@ -308,11 +308,11 @@ Instance state → Start instance
 Note the public IP has changed. This is why production servers use **Elastic IPs**.
 13-take-ebs-snapshot-a.png
 
-![IP after Restarting the Instance](../screenshots/ec2/14-ec2-type-and-ip-after-change.png)
+![IP after Restarting the Instance](../../screenshots/01-foundations/ec2/14-ec2-type-and-ip-after-change.png)
 
 ---
 
-## Step 7 — Assign an Elastic IP
+## Step 7 Assign an Elastic IP
 
 An Elastic IP is a static public IP that stays assigned to your account until you release it.
 
@@ -320,9 +320,9 @@ An Elastic IP is a static public IP that stays assigned to your account until yo
 EC2 → Elastic IPs → Allocate Elastic IP address → Allocate
 ```
 
-![Assign Elastic IP](../screenshots/ec2/15-assign-elastic-ip-a.png)
+![Assign Elastic IP](../../screenshots/01-foundations/ec2/15-assign-elastic-ip-a.png)
 
-![Assign Elastic IP](../screenshots/ec2/15-assign-elastic-ip-a.png)
+![Assign Elastic IP](../../screenshots/01-foundations/ec2/15-assign-elastic-ip-a.png)
 
 Then associate it:
 
@@ -330,11 +330,11 @@ Then associate it:
 Select the Elastic IP → Actions → Associate Elastic IP address
 → select lab-ec2-main → Associate
 ```
-![Associate Elastic IP](../screenshots/ec2/16-allocate-elastic-ip-a.png)
+![Associate Elastic IP](../../screenshots/01-foundations/ec2/16-allocate-elastic-ip-a.png)
 
-![Associate Elastic IP](../screenshots/ec2/16-allocate-elastic-ip-b.png)
+![Associate Elastic IP](../../screenshots/01-foundations/ec2/16-allocate-elastic-ip-b.png)
 
-![Associate Elastic IP](../screenshots/ec2/16-allocate-elastic-ip-c.png)
+![Associate Elastic IP](../../screenshots/01-foundations/ec2/16-allocate-elastic-ip-c.png)
 
 Your instance now has a permanent public IP that survives stop/start cycles.
 
@@ -342,7 +342,7 @@ Your instance now has a permanent public IP that survives stop/start cycles.
 
 ---
 
-## Step 8 — Enable Detailed Monitoring
+## Step 8 Enable Detailed Monitoring
 
 By default, EC2 sends metrics to CloudWatch every 5 minutes (basic monitoring, free). Detailed monitoring sends every 1 minute.
 
@@ -353,13 +353,13 @@ EC2 → Instances → select instance → Actions → Monitor and troubleshoot
 
 > Detailed monitoring costs ~$3.50/month per instance. For a lab, basic monitoring is sufficient. Enable detailed monitoring on production instances where fast anomaly detection matters.
 
-![Enable Monitoring](../screenshots/ec2/17-enable-detailed-monitoring-a.png)
+![Enable Monitoring](../../screenshots/01-foundations/ec2/17-enable-detailed-monitoring-a.png)
 
-![Enable Monitoring](../screenshots/ec2/17-enable-detailed-monitoring-a.png)
+![Enable Monitoring](../../screenshots/01-foundations/ec2/17-enable-detailed-monitoring-a.png)
 
 ---
 
-## Step 9 — Get a System Log and Screenshot
+## Step 9 Get a System Log and Screenshot
 
 Useful when an instance is unreachable:
 
@@ -367,19 +367,19 @@ Useful when an instance is unreachable:
 EC2 → Instances → Actions → Monitor and troubleshoot → Get system log
 EC2 → Instances → Actions → Monitor and troubleshoot → Get instance screenshot
 ```
-![Get System Log](../screenshots/ec2/18-get-system-log-a.png)
+![Get System Log](../../screenshots/01-foundations/ec2/18-get-system-log-a.png)
 
-![Get System Log](../screenshots/ec2/18-get-system-log-b.png)
+![Get System Log](../../screenshots/01-foundations/ec2/18-get-system-log-b.png)
 
-![Get System Screenshot](../screenshots/ec2/18-get-system-screenshots-a.png)
+![Get System Screenshot](../../screenshots/01-foundations/ec2/18-get-system-screenshots-a.png)
 
-![Get System Screenshot](../screenshots/ec2/18-get-system-screenshots-b.png)
+![Get System Screenshot](../../screenshots/01-foundations/ec2/18-get-system-screenshots-b.png)
 
-The system log shows console output from boot — invaluable for diagnosing failed user data scripts or kernel panics.
+The system log shows console output from boot invaluable for diagnosing failed user data scripts or kernel panics.
 
 ---
 
-## Step 10 — Termination Protection
+## Step 10 Termination Protection
 
 Enable this on any instance you cannot afford to accidentally delete:
 
@@ -391,7 +391,7 @@ To terminate a protected instance you must first disable protection, then termin
 
 ---
 
-## Instance Lifecycle — Forensics Checklist
+## Instance Lifecycle Forensics Checklist
 
 Before terminating any instance in an investigation:
 

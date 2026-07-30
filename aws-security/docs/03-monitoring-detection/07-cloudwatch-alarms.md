@@ -51,11 +51,11 @@ Select your `lab1-web-server  instance ID` and browse available metrics:
 | `StatusCheckFailed` | Instance health | Sudden failure may indicate tampering |
 | `DiskReadOps` | Disk read operations | Unusual activity may indicate data staging |
 
-![Explore default metrics](../screenshots/cloudwatch/01-cloudwatch-metric-explore-default-metrics-a.png)
+![Explore default metrics](../../screenshots/03-monitoring-detection/cloudwatch/01-cloudwatch-metric-explore-default-metrics-a.png)
 
-![Explore default metrics](../screenshots/cloudwatch/01-cloudwatch-metric-explore-default-metrics-b.png)
+![Explore default metrics](../../screenshots/03-monitoring-detection/cloudwatch/01-cloudwatch-metric-explore-default-metrics-b.png)
 
-![Explore default metrics](../screenshots/cloudwatch/01-cloudwatch-metric-explore-default-metrics-c.png)
+![Explore default metrics](../../screenshots/03-monitoring-detection/cloudwatch/01-cloudwatch-metric-explore-default-metrics-c.png)
 
 ---
 
@@ -65,20 +65,20 @@ High CPU on a server that should be idle is a common indicator of compromise cry
 
 **Console path:** `CloudWatch → Alarms → Create alarm`
 
-![Create new alarm](../screenshots/cloudwatch/02-create-new-alarm-a.png)
+![Create new alarm](../../screenshots/03-monitoring-detection/cloudwatch/02-create-new-alarm-a.png)
 
 ```
 Select metric → EC2 → Per-Instance Metrics → CPUUtilization
 Select your instance ID → Select metric
 ```
 
-![Create new alarm - CPU utilization](../screenshots/cloudwatch/02-create-new-alarm-cpu-utilization-a.png)
+![Create new alarm - CPU utilization](../../screenshots/03-monitoring-detection/cloudwatch/02-create-new-alarm-cpu-utilization-a.png)
 
-![Select metric - CPU utilization](../screenshots/cloudwatch/02-create-new-alarm-select-metric-cpu-utilization-b.png)
+![Select metric - CPU utilization](../../screenshots/03-monitoring-detection/cloudwatch/02-create-new-alarm-select-metric-cpu-utilization-b.png)
 
-![Select metric - CPU utilization](../screenshots/cloudwatch/02-create-new-alarm-select-metric-cpu-utilization-c.png)
+![Select metric - CPU utilization](../../screenshots/03-monitoring-detection/cloudwatch/02-create-new-alarm-select-metric-cpu-utilization-c.png)
 
-![Select metric - CPU utilization](../screenshots/cloudwatch/02-create-new-alarm-select-metric-cpu-utilization-d.png)
+![Select metric - CPU utilization](../../screenshots/03-monitoring-detection/cloudwatch/02-create-new-alarm-select-metric-cpu-utilization-d.png)
 
 | Field | Value |
 |-------|-------|
@@ -98,7 +98,7 @@ Email endpoint: your email address
 
 Confirm the subscription email AWS sends you.
 
-![Select SNS notification](../screenshots/cloudwatch/03-create-new-alarm-select-sns-notification.png)
+![Select SNS notification](../../screenshots/03-monitoring-detection/cloudwatch/03-create-new-alarm-select-sns-notification.png)
 
 ### Enter the Alarm name and description
 
@@ -107,11 +107,11 @@ Alarm Name: lab1-web-server-CPU-utilization
 Description: Alarm for cpu utilization above 80%
 ```
 
-![Alarm name and description](../screenshots/cloudwatch/04-create-new-alarm-name-and-description.png)
+![Alarm name and description](../../screenshots/03-monitoring-detection/cloudwatch/04-create-new-alarm-name-and-description.png)
 
 > **Datapoints to alarm 2 out of 3:** This means CPU must exceed 80% in 2 of the last 3 five-minute periods before the alarm fires. This prevents false alerts from brief legitimate spikes.
 
-![CPU utilization alarm created](../screenshots/cloudwatch/05-create-new-alarm-cpu-utilization-created.png)
+![CPU utilization alarm created](../../screenshots/03-monitoring-detection/cloudwatch/05-create-new-alarm-cpu-utilization-created.png)
 
 ---
 
@@ -132,7 +132,7 @@ CloudWatch → Alarms → Create alarm
 | Threshold | Greater than 10000000 (10 MB per 5 min) |
 | Action | Send to `Lab1_CloudWatch_Alarms_Topic` SNS topic |
 
-![Data exfiltration alarm](../screenshots/cloudwatch/06-create-new-alarm-data-exfiltration.png)
+![Data exfiltration alarm](../../screenshots/03-monitoring-detection/cloudwatch/06-create-new-alarm-data-exfiltration.png)
 
 > Adjust the threshold based on what is normal for your workload. A web server with low traffic sending 10MB in 5 minutes is suspicious. A file server doing backups might send gigabytes that would be normal.
 
@@ -152,9 +152,9 @@ sudo yum install -y amazon-cloudwatch-agent
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard
 ```
 
-![Install CloudWatch agent](../screenshots/cloudwatch/07-install-cloudwatch-agent-in-ec2-a.png)
+![Install CloudWatch agent](../../screenshots/03-monitoring-detection/cloudwatch/07-install-cloudwatch-agent-in-ec2-a.png)
 
-![Install CloudWatch agent](../screenshots/cloudwatch/07-install-cloudwatch-agent-in-ec2-b.png)
+![Install CloudWatch agent](../../screenshots/03-monitoring-detection/cloudwatch/07-install-cloudwatch-agent-in-ec2-b.png)
 
 Answer the wizard prompts:
 - OS: Linux
@@ -235,11 +235,11 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
 
 ```
 
-![Install agent - no interactive wizard](../screenshots/cloudwatch/08-install-cloudwatch-agent-in-ec2-no-interactive-wizard-a.png)
+![Install agent - no interactive wizard](../../screenshots/03-monitoring-detection/cloudwatch/08-install-cloudwatch-agent-in-ec2-no-interactive-wizard-a.png)
 
-![Install agent - no interactive wizard](../screenshots/cloudwatch/08-install-cloudwatch-agent-in-ec2-no-interactive-wizard-b.png)
+![Install agent - no interactive wizard](../../screenshots/03-monitoring-detection/cloudwatch/08-install-cloudwatch-agent-in-ec2-no-interactive-wizard-b.png)
 
-![Confirm validation succeeded](../screenshots/cloudwatch/09-confirm-validation-succeeded.png)
+![Confirm validation succeeded](../../screenshots/03-monitoring-detection/cloudwatch/09-confirm-validation-succeeded.png)
 
 Start the Agent:
 
@@ -250,11 +250,11 @@ sudo systemctl restart amazon-cloudwatch-agent && sudo systemctl status amazon-c
 
 ```
 
-![Start the agent and confirm it's running](../screenshots/cloudwatch/10-start-the-agent-and-confirm-its-running.png)
+![Start the agent and confirm it's running](../../screenshots/03-monitoring-detection/cloudwatch/10-start-the-agent-and-confirm-its-running.png)
 
 Now check `CloudWatch → Metrics → CWAgent` for memory and disk metrics.
 
-![Confirm agent is running and logs in CloudWatch](../screenshots/cloudwatch/11-confirm-agent-is-running-and-logs-in-cloudwatch.png)
+![Confirm agent is running and logs in CloudWatch](../../screenshots/03-monitoring-detection/cloudwatch/11-confirm-agent-is-running-and-logs-in-cloudwatch.png)
 
 ```bash
 Incase the log group isnt created in Cloudwatc, follow the following:  
@@ -300,17 +300,17 @@ Filter pattern:
 | Metric value | `1` |
 | Default value | `0` |
 
-![Create metric for SSH failed logins](../screenshots/cloudwatch/12-create-metric-for-ssh-failed.png)
+![Create metric for SSH failed logins](../../screenshots/03-monitoring-detection/cloudwatch/12-create-metric-for-ssh-failed.png)
 
-![Create metric for SSH failed logins](../screenshots/cloudwatch/12-create-metric-for-ssh-failed-b.png)
+![Create metric for SSH failed logins](../../screenshots/03-monitoring-detection/cloudwatch/12-create-metric-for-ssh-failed-b.png)
 
-![Create metric for SSH failed logins](../screenshots/cloudwatch/12-create-metric-for-ssh-failed-c.png)
+![Create metric for SSH failed logins](../../screenshots/03-monitoring-detection/cloudwatch/12-create-metric-for-ssh-failed-c.png)
 
-![Create metric for SSH failed logins](../screenshots/cloudwatch/12-create-metric-for-ssh-failed-d.png)
+![Create metric for SSH failed logins](../../screenshots/03-monitoring-detection/cloudwatch/12-create-metric-for-ssh-failed-d.png)
 
 Create an alarm on this metric: threshold ≥ 5 in 5 minutes → alert.
 
-![Create alarm for SSH metric](../screenshots/cloudwatch/13-create-alarm-for-ssh-metric.png)
+![Create alarm for SSH metric](../../screenshots/03-monitoring-detection/cloudwatch/13-create-alarm-for-ssh-metric.png)
 
 > 5 failed SSH logins in 5 minutes is a brute-force attempt. Alert immediately.
 
@@ -336,11 +336,11 @@ Add these widgets:
 | Alarm status | All alarms | Current security state |
 | Log table | CloudTrail errors (Log Insights widget) | Recent failures |
 
-![Create a dashboard](../screenshots/cloudwatch/14-create-a-dashboard-a.png)
+![Create a dashboard](../../screenshots/03-monitoring-detection/cloudwatch/14-create-a-dashboard-a.png)
 
-![Create a dashboard](../screenshots/cloudwatch/14-create-a-dashboard-b.png)
+![Create a dashboard](../../screenshots/03-monitoring-detection/cloudwatch/14-create-a-dashboard-b.png)
 
-![Create a dashboard](../screenshots/cloudwatch/14-create-a-dashboard-c.png)
+![Create a dashboard](../../screenshots/03-monitoring-detection/cloudwatch/14-create-a-dashboard-c.png)
 
 ---
 

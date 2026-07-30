@@ -1,9 +1,9 @@
-# AWS Cloud Security Lab — Operational Runbook
+# AWS Cloud Security Lab: Operational Runbook
 ### Exact Commands · Expected Output · Verification Steps
 
 **Document Type:** Technical Runbook
 **Version:** 1.0
-**Environment:** AWS Educate Free Tier · EC2 (t3.micro) · Kali Linux (VMware NAT) · us-east-1
+**Environment:** AWS Free Tier · EC2 (t3.micro) · Kali Linux (VMware NAT) · us-east-1
 **Companion To:** `aws_security_methodology.md` · `README.md`
 
 ---
@@ -15,27 +15,27 @@
 | `<ACCOUNT_ID>` | Your 12-digit AWS account ID |
 | `<BASTION_IP>` | Public IP of bastion EC2 instance |
 | `<APP_PRIVATE_IP>` | Private IP of application EC2 (10.0.2.x) |
-| `<YOUR_IP>` | Your Kali VM public IP — `curl ifconfig.me` |
-| `<REGION>` | Primary region — `us-east-1` |
+| `<YOUR_IP>` | Your Kali VM public IP: `curl ifconfig.me` |
+| `<REGION>` | Primary region: `us-east-1` |
 | `<TRAIL_BUCKET>` | CloudTrail S3 bucket name |
 | `<SNS_EMAIL>` | Email address subscribed to SNS alerts |
-| `<ADMIN_USER>` | IAM admin username — `admin-wilson` |
-| `<DEV_USER>` | IAM developer username — `developer-user` |
-| `<AUDITOR_USER>` | IAM auditor username — `readonly-auditor` |
+| `<ADMIN_USER>` | IAM admin username: `admin-wilson` |
+| `<DEV_USER>` | IAM developer username: `developer-user` |
+| `<AUDITOR_USER>` | IAM auditor username: `readonly-auditor` |
 
 ---
 
 ## How to Use This Runbook
 
-Every test follows the same six-step validation cycle. Do not skip steps — a skipped step means the detection is assumed, not verified.
+Every test follows the same six-step validation cycle. Do not skip steps: a skipped step means the detection is assumed, not verified.
 
 ```
-STEP 1 — Generate the event       Run the exact command on the correct system
-STEP 2 — Confirm raw event        CloudTrail Event History · source log · VPC Flow Log
-STEP 3 — Confirm ingestion        CloudTrail → Event History · CloudWatch Logs → Discover
-STEP 4 — Confirm detection fired  CloudWatch Alarm · GuardDuty Finding · Config Rule
-STEP 5 — Confirm notification     Check email inbox for SNS alert; record detection latency
-STEP 6 — Tune if missing          See troubleshooting note in each section
+STEP 1: Generate the event       Run the exact command on the correct system
+STEP 2: Confirm raw event        CloudTrail Event History · source log · VPC Flow Log
+STEP 3: Confirm ingestion        CloudTrail → Event History · CloudWatch Logs → Discover
+STEP 4: Confirm detection fired  CloudWatch Alarm · GuardDuty Finding · Config Rule
+STEP 5: Confirm notification     Check email inbox for SNS alert; record detection latency
+STEP 6: Tune if missing          See troubleshooting note in each section
 ```
 
 ---
@@ -59,7 +59,7 @@ Expected output:
 }
 ```
 
-If this fails: `aws configure` — enter access key, secret key, region `us-east-1`, output `json`.
+If this fails: `aws configure`: enter access key, secret key, region `us-east-1`, output `json`.
 
 ### 2. Confirm CloudTrail Is Active and Delivering
 
@@ -89,7 +89,7 @@ Expected: log group `CloudTrail/cloud-security-lab` listed with a recent `lastIn
 aws guardduty list-detectors
 ```
 
-Expected: a detector ID returned. If empty — GuardDuty is not enabled.
+Expected: a detector ID returned. If empty: GuardDuty is not enabled.
 
 ```bash
 # Get detector status
@@ -124,14 +124,14 @@ Expected: both bastion and application instances listed as running.
 
 ---
 
-# PHASE 1 — AUDIT BASELINE
+# PHASE 1: AUDIT BASELINE
 **Goal:** Confirm all logging pipelines are active and flowing before any attack simulations run. Nothing in Phase 2–6 is valid if Phase 1 is not verified.
 
 ---
 
-## 1.1 — Generate a Known CloudTrail Event and Verify End-to-End
+## 1.1: Generate a Known CloudTrail Event and Verify End-to-End
 
-**On Kali — make a benign API call:**
+**On Kali: make a benign API call:**
 ```bash
 aws ec2 describe-instances --region us-east-1
 ```
@@ -150,13 +150,13 @@ AWS Console → CloudWatch → Log Groups → CloudTrail/cloud-security-lab
 → Search log stream for: DescribeInstances
 ```
 
-Expected: same event visible in CloudWatch Logs — confirms the CloudTrail → CloudWatch Logs delivery pipeline is working.
+Expected: same event visible in CloudWatch Logs: confirms the CloudTrail → CloudWatch Logs delivery pipeline is working.
 
 **Tune if missing:** Check the CloudTrail trail has CloudWatch Logs integration enabled. Under trail settings, confirm a CloudWatch Logs log group and IAM role are assigned.
 
 ---
 
-## 1.2 — Confirm S3 CloudTrail Log Delivery
+## 1.2: Confirm S3 CloudTrail Log Delivery
 
 ```bash
 aws s3 ls s3://<TRAIL_BUCKET>/AWSLogs/<ACCOUNT_ID>/CloudTrail/us-east-1/ \
@@ -179,7 +179,7 @@ Expected: readable JSON events with `eventName`, `userIdentity`, `sourceIPAddres
 
 ---
 
-## 1.3 — Validate CloudTrail Log File Integrity
+## 1.3: Validate CloudTrail Log File Integrity
 
 ```bash
 aws cloudtrail validate-logs \
@@ -197,11 +197,11 @@ Results requested for 2026/...
 No invalid log files found.
 ```
 
-Any `invalid` result means a log file was modified or deleted after delivery — treat as a security incident.
+Any `invalid` result means a log file was modified or deleted after delivery: treat as a security incident.
 
 ---
 
-## 1.4 — Confirm VPC Flow Logs Are Active
+## 1.4: Confirm VPC Flow Logs Are Active
 
 ```bash
 aws ec2 describe-flow-logs \
@@ -212,10 +212,10 @@ Expected: flow log listed with `"FlowLogStatus": "ACTIVE"` delivering to CloudWa
 
 **Generate test traffic and confirm:**
 ```bash
-# On Kali — ping the bastion
+# On Kali: ping the bastion
 ping -c 5 <BASTION_IP>
 
-# On Wazuh/Kali — check flow log group
+# On Wazuh/Kali: check flow log group
 aws logs filter-log-events \
   --log-group-name VPCFlowLogs \
   --filter-pattern "<BASTION_IP>" \
@@ -228,14 +228,14 @@ Expected: flow log entries showing `ACCEPT` for ICMP traffic from `<YOUR_IP>` to
 
 ---
 
-# PHASE 2 — IDENTITY CONTROLS
+# PHASE 2: IDENTITY CONTROLS
 **Goal:** Validate IAM privilege controls, MFA enforcement, permission boundaries, and alert on identity-related events.
 
 ---
 
-## 2.1 — Root Account Login Detection
+## 2.1: Root Account Login Detection
 
-> This test requires logging into the AWS console as root. Do this once — confirm the alarm fires — then immediately log out and never use root again.
+> This test requires logging into the AWS console as root. Do this once: confirm the alarm fires: then immediately log out and never use root again.
 
 **Action:**
 ```
@@ -260,20 +260,20 @@ AWS Console → CloudWatch → Alarms → RootAccountUsage → state: ALARM
 Subject: `ALARM: RootAccountUsage`
 Body: includes account ID, event time, and source IP.
 
-Record time of login vs. time of email — this is your detection latency.
+Record time of login vs. time of email: this is your detection latency.
 
 **Expected Alert:**
 | Alarm Name | State | SNS Email |
 |---|---|---|
-| RootAccountUsage | ALARM | Yes — within 5 minutes |
+| RootAccountUsage | ALARM | Yes: within 5 minutes |
 
 **Tune if missing:** Confirm the CloudWatch metric filter pattern is: `{ $.userIdentity.type = "Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != "AwsServiceEvent" }`. Confirm the metric filter is applied to the correct CloudWatch log group (the one CloudTrail delivers to).
 
 ---
 
-## 2.2 — IAM Policy Change Detection
+## 2.2: IAM Policy Change Detection
 
-**On Kali — attach a policy directly to a user (intentional misconfiguration):**
+**On Kali: attach a policy directly to a user (intentional misconfiguration):**
 ```bash
 aws iam attach-user-policy \
   --user-name <DEV_USER> \
@@ -294,7 +294,7 @@ Expected: event showing `userName: developer-user` and `policyArn: ReadOnlyAcces
 CloudWatch → Alarms → IAMPolicyChange → state: ALARM
 ```
 
-**Clean up — detach the policy:**
+**Clean up: detach the policy:**
 ```bash
 aws iam detach-user-policy \
   --user-name <DEV_USER> \
@@ -310,14 +310,14 @@ aws iam detach-user-policy \
 
 ---
 
-## 2.3 — Permission Boundary Enforcement Validation
+## 2.3: Permission Boundary Enforcement Validation
 
-**Confirm developer-user cannot exceed their boundary — attempt a forbidden action:**
+**Confirm developer-user cannot exceed their boundary: attempt a forbidden action:**
 ```bash
 # Assume developer-user credentials (use the developer-user access key)
 aws configure --profile developer
 
-# Attempt to list IAM users — should be denied by permission boundary
+# Attempt to list IAM users: should be denied by permission boundary
 aws iam list-users --profile developer
 ```
 
@@ -350,11 +350,11 @@ CloudWatch → Alarms → UnauthorisedAPICall → state: ALARM
 
 ---
 
-## 2.4 — MFA Enforcement Validation
+## 2.4: MFA Enforcement Validation
 
 **Test that a user without MFA cannot access the console for sensitive operations:**
 
-On Kali — attempt an IAM operation using credentials without MFA session token:
+On Kali: attempt an IAM operation using credentials without MFA session token:
 ```bash
 # Using developer-user long-term credentials (no MFA session)
 aws iam create-user --user-name test-no-mfa --profile developer
@@ -380,18 +380,18 @@ The IAM group policy should include this condition:
 }
 ```
 
-If the action succeeds without MFA — the condition is missing. Add it to the group policy and retest.
+If the action succeeds without MFA: the condition is missing. Add it to the group policy and retest.
 
 ---
 
-## 2.5 — EC2 IAM Role Scope Validation
+## 2.5: EC2 IAM Role Scope Validation
 
 **SSH into the EC2 instance and confirm the role scope:**
 ```bash
 ssh -i cyberninja-key.pem ubuntu@<BASTION_IP>
 ```
 
-**On the EC2 instance — confirm the role is attached:**
+**On the EC2 instance: confirm the role is attached:**
 ```bash
 curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/
 ```
@@ -400,11 +400,11 @@ Expected: `ec2-ssm-role` returned.
 
 **Confirm IMDSv2 is required (IMDSv1 should be blocked):**
 ```bash
-# This should fail — IMDSv1 request (no token)
+# This should fail: IMDSv1 request (no token)
 curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ec2-ssm-role
 ```
 
-Expected: `401 - Unauthorized` — IMDSv1 blocked.
+Expected: `401 - Unauthorized`: IMDSv1 blocked.
 
 **IMDSv2 request (correct method):**
 ```bash
@@ -418,29 +418,29 @@ Expected: temporary credentials JSON with `AccessKeyId`, `SecretAccessKey`, `Tok
 
 **Confirm role cannot access out-of-scope resources:**
 ```bash
-# Attempt to list all S3 buckets from inside EC2 — should be denied
+# Attempt to list all S3 buckets from inside EC2: should be denied
 aws s3 ls
 ```
 
-Expected: `AccessDenied` — role only has `s3:GetObject` on a specific path, not `s3:ListAllMyBuckets`.
+Expected: `AccessDenied`: role only has `s3:GetObject` on a specific path, not `s3:ListAllMyBuckets`.
 
 ---
 
 ---
 
-# PHASE 3 — NETWORK CONTROLS
+# PHASE 3: NETWORK CONTROLS
 **Goal:** Validate VPC segmentation, security group enforcement, NACL rules, and GuardDuty network findings.
 
 ---
 
-## 3.1 — Confirm Application EC2 Is Not Reachable Directly
+## 3.1: Confirm Application EC2 Is Not Reachable Directly
 
-**From Kali — attempt to SSH directly to the application EC2 private IP (should fail):**
+**From Kali: attempt to SSH directly to the application EC2 private IP (should fail):**
 ```bash
 ssh -i cyberninja-key.pem ubuntu@<APP_PRIVATE_IP>
 ```
 
-Expected: connection times out — `<APP_PRIVATE_IP>` is in a private subnet with no internet gateway route. Not reachable from the internet.
+Expected: connection times out: `<APP_PRIVATE_IP>` is in a private subnet with no internet gateway route. Not reachable from the internet.
 
 **Confirm via VPC route table:**
 ```bash
@@ -453,7 +453,7 @@ Expected: no route `0.0.0.0/0` via `igw-` (internet gateway). Only a local route
 
 ---
 
-## 3.2 — Security Group — Confirm SSH Source Restriction
+## 3.2: Security Group: Confirm SSH Source Restriction
 
 **Verify bastion security group only allows SSH from your IP:**
 ```bash
@@ -480,9 +480,9 @@ If you have access to a second machine or a proxy, attempt SSH from a non-whitel
 
 ---
 
-## 3.3 — Security Group Change Detection
+## 3.3: Security Group Change Detection
 
-**Introduce a deliberate misconfiguration — open SSH to the world:**
+**Introduce a deliberate misconfiguration: open SSH to the world:**
 ```bash
 aws ec2 authorize-security-group-ingress \
   --group-id <SG_BASTION_ID> \
@@ -529,9 +529,9 @@ Confirm Config rule returns to COMPLIANT after remediation (may take up to 5 min
 
 ---
 
-## 3.4 — GuardDuty — Port Probe Finding
+## 3.4: GuardDuty: Port Probe Finding
 
-**From Kali — run an Nmap SYN scan against the bastion:**
+**From Kali: run an Nmap SYN scan against the bastion:**
 ```bash
 nmap -sS <BASTION_IP>
 ```
@@ -570,19 +570,19 @@ Expected output:
 }
 ```
 
-**Tune if missing:** GuardDuty port probe findings require the instance to have an unprotected port exposed. Confirm the bastion has port 22 open in its security group (even restricted to /32). GuardDuty analyses network traffic patterns — allow up to 15 minutes after the scan.
+**Tune if missing:** GuardDuty port probe findings require the instance to have an unprotected port exposed. Confirm the bastion has port 22 open in its security group (even restricted to /32). GuardDuty analyses network traffic patterns: allow up to 15 minutes after the scan.
 
 ---
 
-## 3.5 — GuardDuty — SSH Brute Force Finding
+## 3.5: GuardDuty: SSH Brute Force Finding
 
-**From Kali — run Hydra against the bastion:**
+**From Kali: run Hydra against the bastion:**
 ```bash
 hydra -l ubuntu -P /usr/share/wordlists/metasploit/unix_passwords.txt \
   ssh://<BASTION_IP> -t 4 -V
 ```
 
-> This will fail to authenticate (correct — we are testing detection, not exploitation). Allow it to run for 2–3 minutes to generate sufficient failed attempts.
+> This will fail to authenticate (correct: we are testing detection, not exploitation). Allow it to run for 2–3 minutes to generate sufficient failed attempts.
 
 **Verify raw log on EC2:**
 ```bash
@@ -605,20 +605,20 @@ Expected: finding returned within 15 minutes.
 | Finding Type | Severity | Source |
 |---|---|---|
 | `UnauthorizedAccess:EC2/SSHBruteForce` | Medium (5.0) | GuardDuty |
-| SNS email | — | Inbox |
+| SNS email |: | Inbox |
 
 ---
 
 ---
 
-# PHASE 4 — DATA CONTROLS
+# PHASE 4: DATA CONTROLS
 **Goal:** Validate S3 security controls, confirm data protection, and verify Config detects drift.
 
 ---
 
-## 4.1 — Block Public Access — Misconfiguration Detection
+## 4.1: Block Public Access: Misconfiguration Detection
 
-**Introduce a deliberate misconfiguration — disable Block Public Access on the app-data bucket:**
+**Introduce a deliberate misconfiguration: disable Block Public Access on the app-data bucket:**
 ```bash
 aws s3api put-public-access-block \
   --bucket app-data-<ACCOUNT_ID> \
@@ -645,7 +645,7 @@ Confirm Config rule returns to COMPLIANT.
 
 ---
 
-## 4.2 — Encryption Validation
+## 4.2: Encryption Validation
 
 **Confirm server-side encryption is the bucket default:**
 ```bash
@@ -686,7 +686,7 @@ Expected:
 }
 ```
 
-**Attempt to upload without encryption specified — default should apply automatically:**
+**Attempt to upload without encryption specified: default should apply automatically:**
 ```bash
 aws s3 cp /tmp/test-object.txt s3://app-data-<ACCOUNT_ID>/test/unencrypted-attempt.txt \
   --sse AES256
@@ -696,7 +696,7 @@ If the bucket policy requires SSE-KMS and denies other encryption types, this sh
 
 ---
 
-## 4.3 — Versioning and Deletion Recovery
+## 4.3: Versioning and Deletion Recovery
 
 **Confirm versioning is enabled:**
 ```bash
@@ -711,7 +711,7 @@ Expected: `"Status": "Enabled"`.
 echo "version 1" > /tmp/versioned-test.txt
 aws s3 cp /tmp/versioned-test.txt s3://app-data-<ACCOUNT_ID>/test/versioned-test.txt
 
-echo "version 2 — overwritten" > /tmp/versioned-test.txt
+echo "version 2: overwritten" > /tmp/versioned-test.txt
 aws s3 cp /tmp/versioned-test.txt s3://app-data-<ACCOUNT_ID>/test/versioned-test.txt
 
 # List all versions
@@ -729,13 +729,13 @@ aws s3api get-object \
 cat /tmp/recovered-version1.txt
 ```
 
-Expected: `version 1` — confirms versioning allows recovery from overwrites.
+Expected: `version 1`: confirms versioning allows recovery from overwrites.
 
 ---
 
-## 4.4 — CloudTrail Log Bucket Protection
+## 4.4: CloudTrail Log Bucket Protection
 
-**Attempt to delete a CloudTrail log object — should be denied by bucket policy:**
+**Attempt to delete a CloudTrail log object: should be denied by bucket policy:**
 ```bash
 # Get the name of a recent log file
 aws s3 ls s3://<TRAIL_BUCKET>/AWSLogs/<ACCOUNT_ID>/CloudTrail/us-east-1/$(date +%Y/%m/%d)/ \
@@ -750,7 +750,7 @@ Expected:
 delete failed: ... An error occurred (AccessDenied) when calling the DeleteObject operation:
 ```
 
-Bucket policy enforcement confirmed — even the admin user cannot delete audit logs.
+Bucket policy enforcement confirmed: even the admin user cannot delete audit logs.
 
 **Verify in CloudTrail:**
 ```bash
@@ -759,11 +759,11 @@ aws cloudtrail lookup-events \
   --max-results 3
 ```
 
-Expected: `DeleteObject` event with `errorCode: AccessDenied` — the attempt is logged even though it was blocked.
+Expected: `DeleteObject` event with `errorCode: AccessDenied`: the attempt is logged even though it was blocked.
 
 ---
 
-## 4.5 — S3 Access Logging Verification
+## 4.5: S3 Access Logging Verification
 
 **Confirm access logging is enabled on app-data bucket:**
 ```bash
@@ -792,12 +792,12 @@ Expected: entries showing your IAM user, timestamp, operation (`REST.GET.OBJECT`
 
 ---
 
-# PHASE 5 — ACTIVE MONITORING
+# PHASE 5: ACTIVE MONITORING
 **Goal:** Validate every CloudWatch alarm fires end-to-end: event → metric filter → alarm state → SNS email.
 
 ---
 
-## 5.1 — Full Alarm Validation Checklist
+## 5.1: Full Alarm Validation Checklist
 
 Run each trigger action below and record the results in the table.
 
@@ -820,9 +820,9 @@ Any alarm that does not deliver to inbox within 10 minutes is not a working dete
 
 ---
 
-## 5.2 — CloudTrail Stop-Logging Alarm
+## 5.2: CloudTrail Stop-Logging Alarm
 
-**Stop CloudTrail — the most critical detection:**
+**Stop CloudTrail: the most critical detection:**
 ```bash
 aws cloudtrail stop-logging \
   --name cloud-security-lab-trail
@@ -852,7 +852,7 @@ aws cloudtrail get-trail-status \
 
 ---
 
-## 5.3 — Console Authentication Failure Alarm
+## 5.3: Console Authentication Failure Alarm
 
 **Trigger 3+ failed console login attempts:**
 ```
@@ -881,12 +881,12 @@ CloudWatch → Alarms → ConsoleAuthFailures → state: ALARM
 
 ---
 
-# PHASE 6 — THREAT DETECTION
+# PHASE 6: THREAT DETECTION
 **Goal:** Validate GuardDuty detects active threats. Generate findings deliberately. Verify the full pipeline.
 
 ---
 
-## 6.1 — Generate GuardDuty Test Findings (API Method)
+## 6.1: Generate GuardDuty Test Findings (API Method)
 
 AWS provides a built-in method to generate sample findings for all finding types. Use this to validate the GuardDuty → CloudWatch Events → SNS pipeline without requiring a live attack.
 
@@ -914,9 +914,9 @@ Expected: 5 sample findings listed with `[SAMPLE]` prefix.
 
 ---
 
-## 6.2 — Live GuardDuty Validation — Port Probe
+## 6.2: Live GuardDuty Validation: Port Probe
 
-*(Already covered in Phase 3.4 — cross-reference findings here.)*
+*(Already covered in Phase 3.4: cross-reference findings here.)*
 
 ```bash
 # Confirm finding persists and was not auto-archived
@@ -932,9 +932,9 @@ aws guardduty list-findings \
 
 ---
 
-## 6.3 — Live GuardDuty Validation — SSH Brute Force
+## 6.3: Live GuardDuty Validation: SSH Brute Force
 
-*(Already covered in Phase 3.5 — confirm the finding here.)*
+*(Already covered in Phase 3.5: confirm the finding here.)*
 
 ```bash
 aws guardduty list-findings \
@@ -946,7 +946,7 @@ Expected: finding with severity 5.0 (Medium), resource = bastion instance ID.
 
 ---
 
-## 6.4 — AWS Config — Compliance Dashboard Snapshot
+## 6.4: AWS Config: Compliance Dashboard Snapshot
 
 **Get the current compliance summary:**
 ```bash
@@ -957,7 +957,7 @@ aws configservice describe-compliance-by-config-rule \
 
 Expected: all rules showing `COMPLIANT` after all remediations in Phases 3 and 4 are applied.
 
-Any `NON_COMPLIANT` remaining is an open finding — document it and the remediation action.
+Any `NON_COMPLIANT` remaining is an open finding: document it and the remediation action.
 
 **Get the full compliance history for a specific rule:**
 ```bash
@@ -968,11 +968,11 @@ aws configservice get-compliance-details-by-config-rule \
   --output table
 ```
 
-This shows the timeline of compliance state changes — useful for demonstrating that a misconfiguration was introduced, detected, and remediated.
+This shows the timeline of compliance state changes: useful for demonstrating that a misconfiguration was introduced, detected, and remediated.
 
 ---
 
-## 6.5 — EC2 Instance Lifecycle — Stop, Start, Scale
+## 6.5: EC2 Instance Lifecycle: Stop, Start, Scale
 
 **Stop the instance:**
 ```bash
@@ -1013,13 +1013,13 @@ aws cloudtrail lookup-events \
   --lookup-attributes AttributeKey=EventName,AttributeValue=StartInstances
 ```
 
-All three lifecycle events appear in CloudTrail — confirms full audit trail of infrastructure changes.
+All three lifecycle events appear in CloudTrail: confirms full audit trail of infrastructure changes.
 
 ---
 
 ---
 
-# QUICK REFERENCE — CloudWatch Metric Filter Patterns
+# QUICK REFERENCE: CloudWatch Metric Filter Patterns
 
 | Alarm Name | Metric Filter Pattern |
 |---|---|
@@ -1035,7 +1035,7 @@ All three lifecycle events appear in CloudTrail — confirms full audit trail of
 
 ---
 
-# QUICK REFERENCE — GuardDuty Finding Types
+# QUICK REFERENCE: GuardDuty Finding Types
 
 | Finding Type | Severity | Trigger |
 |---|---|---|
@@ -1051,7 +1051,7 @@ All three lifecycle events appear in CloudTrail — confirms full audit trail of
 
 ---
 
-# QUICK REFERENCE — AWS Config Managed Rules
+# QUICK REFERENCE: AWS Config Managed Rules
 
 | Rule Name | Checks | Remediation |
 |---|---|---|
@@ -1061,18 +1061,18 @@ All three lifecycle events appear in CloudTrail — confirms full audit trail of
 | `vpc-default-security-group-closed` | Default SG has no rules | Remove all inbound/outbound rules |
 | `s3-bucket-public-read-prohibited` | No bucket is publicly readable | Enable Block Public Access |
 | `s3-bucket-server-side-encryption-enabled` | All buckets encrypted | Enable SSE-KMS as default |
-| `cloudtrail-enabled` | Trail is active | Re-enable — alarm also fires |
+| `cloudtrail-enabled` | Trail is active | Re-enable: alarm also fires |
 | `cloud-trail-log-file-validation-enabled` | Hash validation on | Enable in trail settings |
 | `ec2-imdsv2-check` | All instances require IMDSv2 | `modify-instance-metadata-options --http-tokens required` |
 | `s3-bucket-logging-enabled` | Access logging on | Enable with target bucket |
 
 ---
 
-# MITRE ATT&CK for Cloud — Coverage Map
+# MITRE ATT&CK for Cloud: Coverage Map
 
 | Phase | Tactic | Technique ID | Technique | Lab Test |
 |---|---|---|---|---|
-| 2.1 | Defence Evasion / Persistence | T1078.004 | Cloud Accounts — Root | Root login detection |
+| 2.1 | Defence Evasion / Persistence | T1078.004 | Cloud Accounts: Root | Root login detection |
 | 2.2 | Privilege Escalation | T1548 | Abuse Elevation Control | Direct policy attach |
 | 2.3 | Privilege Escalation | T1548 | Permission boundary bypass attempt | Developer user IAM call |
 | 3.3 | Defence Evasion | T1562.007 | Disable or Modify Cloud Firewall | SG 0.0.0.0/0 misconfiguration |
@@ -1086,5 +1086,5 @@ All three lifecycle events appear in CloudTrail — confirms full audit trail of
 
 ---
 
-*Runbook v1.0 — AWS Cloud Security Lab*
+*Runbook v1.0: AWS Cloud Security Lab*
 *See also: `aws_security_methodology.md` · `README.md` · `docs/threat-control-mapping.md`*

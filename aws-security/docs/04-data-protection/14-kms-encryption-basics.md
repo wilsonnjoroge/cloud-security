@@ -46,9 +46,9 @@ To read the data:
 
 **Console path:** `KMS → Customer managed keys → Create key`
 
-![Access KMS](../screenshots/kms/01-create-key-a.png)
+![Access KMS](../../screenshots/04-data-protection/kms/01-create-key-a.png)
 
-![Customer managed keys, create key](../screenshots/kms/01-create-key-b.png)
+![Customer managed keys, create key](../../screenshots/04-data-protection/kms/01-create-key-b.png)
 
 ### Key configuration
 
@@ -58,7 +58,7 @@ To read the data:
 | Key usage | Encrypt and decrypt |
 | Key material origin | KMS (AWS generates the key material) |
 
-![Configure key](../screenshots/kms/01-create-key-c.png)
+![Configure key](../../screenshots/04-data-protection/kms/01-create-key-c.png)
 
 ### Labels
 
@@ -68,13 +68,13 @@ To read the data:
 | Description | `Main encryption key for lab resources` |
 | Tags | Environment=Lab |
 
-![Add labels](../screenshots/kms/01-create-key-d.png)
+![Add labels](../../screenshots/04-data-protection/kms/01-create-key-d.png)
 
 ### Key administrators
 
 Select your admin IAM user. Administrators can manage the key (delete, disable, rotate) but this does not grant them automatic decrypt access.
 
-![Define key administrative permissions](../screenshots/kms/01-create-key-e.png)
+![Define key administrative permissions](../../screenshots/04-data-protection/kms/01-create-key-e.png)
 
 ### Key usage permissions
 
@@ -84,7 +84,7 @@ Select the IAM users and roles that can use this key for encryption/decryption:
 
 Click **Finish**.
 
-![Review and finish](../screenshots/kms/01-create-key-f.png)
+![Review and finish](../../screenshots/04-data-protection/kms/01-create-key-f.png)
 
 > **Key policy vs IAM policy:** KMS uses both. The key policy on the KMS key must allow the identity. The IAM policy on the identity must allow `kms:*` actions. Both must allow: either one denying is enough to block access.
 
@@ -98,7 +98,7 @@ View the auto-generated key policy:
 KMS → lab1-main-key → Key policy tab
 ```
 
-![Understand the key policy](../screenshots/kms/02-understand-key-policy.png)
+![Understand the key policy](../../screenshots/04-data-protection/kms/02-understand-key-policy.png)
 
 ```json
 {
@@ -154,13 +154,13 @@ S3 → lab-private-yourname → Properties → Default encryption → Edit
   AWS KMS key:     lab1-main-key
 ```
 
-![Encrypt a private bucket](../screenshots/kms/03-encrypt-a-private-bucket-a.png)
+![Encrypt a private bucket](../../screenshots/04-data-protection/kms/03-encrypt-a-private-bucket-a.png)
 
-![Default encryption, before using KMS](../screenshots/kms/03-encrypt-a-private-bucket-b.png)
+![Default encryption, before using KMS](../../screenshots/04-data-protection/kms/03-encrypt-a-private-bucket-b.png)
 
-![Edit default encryption, select SSE-KMS](../screenshots/kms/03-encrypt-a-private-bucket-c.png)
+![Edit default encryption, select SSE-KMS](../../screenshots/04-data-protection/kms/03-encrypt-a-private-bucket-c.png)
 
-![Default encryption using the KMS key, confirmed](../screenshots/kms/03-encrypt-a-private-bucket-d.png)
+![Default encryption using the KMS key, confirmed](../../screenshots/04-data-protection/kms/03-encrypt-a-private-bucket-d.png)
 
 Now all objects uploaded to this bucket are automatically encrypted with your KMS key. Only identities with both the KMS key policy permission and the IAM `kms:Decrypt` permission can read the data.
 
@@ -182,11 +182,11 @@ aws s3 cp s3://lab1-private-bucket/myfile.txt ./test.txt
 # Expected: Access Denied
 ```
 
-![Upload files to the bucket](../screenshots/kms/04-upload-files-to-the-bucket-a.png)
+![Upload files to the bucket](../../screenshots/04-data-protection/kms/04-upload-files-to-the-bucket-a.png)
 
-![Files uploaded, encrypted objects in bucket](../screenshots/kms/04-upload-files-to-the-bucket-b.png)
+![Files uploaded, encrypted objects in bucket](../../screenshots/04-data-protection/kms/04-upload-files-to-the-bucket-b.png)
 
-![Download as admin, succeeded](../screenshots/kms/05-download-as-admin-succeed.png)
+![Download as admin, succeeded](../../screenshots/04-data-protection/kms/05-download-as-admin-succeed.png)
 
 ---
 
@@ -201,9 +201,9 @@ EC2 → Volumes → Create volume
   KMS key:    lab1-main-key
 ```
 
-![Encrypt an EBS volume, create with encryption enabled](../screenshots/kms/06-encrypt-an-ebs-a.png)
+![Encrypt an EBS volume, create with encryption enabled](../../screenshots/04-data-protection/kms/06-encrypt-an-ebs-a.png)
 
-![Encrypted volume confirmed, KMS key alias shown](../screenshots/kms/06-encrypt-an-ebs-b.png)
+![Encrypted volume confirmed, KMS key alias shown](../../screenshots/04-data-protection/kms/06-encrypt-an-ebs-b.png)
 
 Any snapshots created from this volume are also encrypted. Any volumes created from those snapshots inherit the encryption.
 
@@ -228,23 +228,23 @@ To encrypt an existing unencrypted instance:
 7. Start the instance
 ```
 
-![Confirm the root volume before starting](../screenshots/kms/07-encrypt-ec2-root-ebs-a.png)
+![Confirm the root volume before starting](../../screenshots/04-data-protection/kms/07-encrypt-ec2-root-ebs-a.png)
 
-![Volumes, Actions, Create snapshot](../screenshots/kms/07-encrypt-ec2-root-ebs-b.png)
+![Volumes, Actions, Create snapshot](../../screenshots/04-data-protection/kms/07-encrypt-ec2-root-ebs-b.png)
 
-![Snapshot completed](../screenshots/kms/07-encrypt-ec2-root-ebs-c.png)
+![Snapshot completed](../../screenshots/04-data-protection/kms/07-encrypt-ec2-root-ebs-c.png)
 
-![Copy the snapshot with encryption enabled](../screenshots/kms/08-copy-and-encrypt-the-snapshot.png)
+![Copy the snapshot with encryption enabled](../../screenshots/04-data-protection/kms/08-copy-and-encrypt-the-snapshot.png)
 
-![Create a volume from the encrypted snapshot](../screenshots/kms/08-c-create-volume-from-the-encrypted-snapshot.png)
+![Create a volume from the encrypted snapshot](../../screenshots/04-data-protection/kms/08-c-create-volume-from-the-encrypted-snapshot.png)
 
-![New volume confirmed encrypted with lab1-main-key](../screenshots/kms/08-c-create-volume-from-the-encrypted-snapshot-b.png)
+![New volume confirmed encrypted with lab1-main-key](../../screenshots/04-data-protection/kms/08-c-create-volume-from-the-encrypted-snapshot-b.png)
 
-![Detach the original unencrypted volume](../screenshots/kms/08-b-detatch-the-unencrypted-volume.png)
+![Detach the original unencrypted volume](../../screenshots/04-data-protection/kms/08-b-detatch-the-unencrypted-volume.png)
 
-![Attach the new encrypted volume, select from Actions](../screenshots/kms/08-d-attatch-the-encrypted-volume-to-an-ec2-a.png)
+![Attach the new encrypted volume, select from Actions](../../screenshots/04-data-protection/kms/08-d-attatch-the-encrypted-volume-to-an-ec2-a.png)
 
-![Attach volume to instance as /dev/xvda](../screenshots/kms/08-d-attatch-the-encrypted-volume-to-an-ec2-b.png)
+![Attach volume to instance as /dev/xvda](../../screenshots/04-data-protection/kms/08-d-attatch-the-encrypted-volume-to-an-ec2-b.png)
 
 ---
 
@@ -257,9 +257,9 @@ KMS → lab1-main-key → Key rotation tab
   Automatically rotate this KMS key every year: Enable
 ```
 
-![Enable key rotation](../screenshots/kms/09-enable-key-rotation-a.png)
+![Enable key rotation](../../screenshots/04-data-protection/kms/09-enable-key-rotation-a.png)
 
-![Key rotation enabled, confirmed](../screenshots/kms/09-enable-key-rotation-b.png)
+![Key rotation enabled, confirmed](../../screenshots/04-data-protection/kms/09-enable-key-rotation-b.png)
 
 > **Why rotate?** If key material is somehow compromised, rotation limits the window of exposure. Data encrypted with the old material can still be decrypted (AWS retains it internally), but new data uses the new material.
 
@@ -305,7 +305,7 @@ Metric filter pattern:
    ($.eventName = "ScheduleKeyDeletion")) }
 ```
 
-![Creating a CloudWatch alarm for KMS deletion](../screenshots/kms/09-creating-a-cloudwatch-alarm-for-kms-deletion.png)
+![Creating a CloudWatch alarm for KMS deletion](../../screenshots/04-data-protection/kms/09-creating-a-cloudwatch-alarm-for-kms-deletion.png)
 
 Alert immediately. A disabled or deleted KMS key can make all encrypted data permanently unreadable: this is a catastrophic incident.
 

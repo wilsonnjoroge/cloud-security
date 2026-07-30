@@ -54,17 +54,17 @@ Click **Create bucket**.
 
 > **Naming rules:** Lowercase only, 3–63 characters, no underscores, globally unique across all AWS accounts worldwide. Use your name or a random suffix to ensure uniqueness.
 
-![Create S3 Bucket](../screenshots/s3/01-create-s3-bucket-a.png)
+![Create S3 Bucket](../../screenshots/01-foundations/s3/01-create-s3-bucket-a.png)
 
-![Create S3 Bucket](../screenshots/s3/01-create-s3-bucket-b.png)
+![Create S3 Bucket](../../screenshots/01-foundations/s3/01-create-s3-bucket-b.png)
 
-![Create S3 Bucket](../screenshots/s3/01-create-s3-bucket-c.png)
+![Create S3 Bucket](../../screenshots/01-foundations/s3/01-create-s3-bucket-c.png)
 
-![Create S3 Bucket](../screenshots/s3/01-create-s3-bucket-d.png)
+![Create S3 Bucket](../../screenshots/01-foundations/s3/01-create-s3-bucket-d.png)
 
-![Create S3 Bucket](../screenshots/s3/01-create-s3-bucket-e.png)
+![Create S3 Bucket](../../screenshots/01-foundations/s3/01-create-s3-bucket-e.png)
 
-![Create S3 Bucket](../screenshots/s3/01-create-s3-bucket-f.png)
+![Create S3 Bucket](../../screenshots/01-foundations/s3/01-create-s3-bucket-f.png)
 
 ---
 
@@ -76,15 +76,15 @@ Click **Create bucket**.
 Click your bucket → Upload → Add files → select any test file → Upload
 ```
 
-![Upload Object](../screenshots/s3/02-upload-data-to-the-bucket-a.png)
+![Upload Object](../../screenshots/01-foundations/s3/02-upload-data-to-the-bucket-a.png)
 
-![Upload Object](../screenshots/s3/02-upload-data-to-the-bucket-b.png)
+![Upload Object](../../screenshots/01-foundations/s3/02-upload-data-to-the-bucket-b.png)
 
-![Upload Object](../screenshots/s3/02-upload-data-to-the-bucket-c.png)
+![Upload Object](../../screenshots/01-foundations/s3/02-upload-data-to-the-bucket-c.png)
 
-![Upload Object](../screenshots/s3/02-upload-data-to-the-bucket-d.png)
+![Upload Object](../../screenshots/01-foundations/s3/02-upload-data-to-the-bucket-d.png)
 
-![Upload Object](../screenshots/s3/02-upload-data-to-the-bucket-e.png)
+![Upload Object](../../screenshots/01-foundations/s3/02-upload-data-to-the-bucket-e.png)
 
 
 ### Via CLI
@@ -107,7 +107,7 @@ aws s3 ls s3://lab1-demo-s3-bucket/
 aws s3 cp s3://lab1-demo-s3-bucket/myfile.txt ./downloaded.txt
 ```
 
-![Upload Object](../screenshots/s3/02-upload-data-to-the-bucket-e.png)
+![Upload Object](../../screenshots/01-foundations/s3/02-upload-data-to-the-bucket-e.png)
 
 ---
 
@@ -121,20 +121,20 @@ If you enabled versioning at creation, verify it:
 Bucket → Properties → Bucket versioning → Enabled
 ```
 
-![Enable Versioning](../screenshots/s3/03-enable-versioning-a.png)
+![Enable Versioning](../../screenshots/01-foundations/s3/03-enable-versioning-a.png)
 
-![Enable Versioning](../screenshots/s3/03-enable-versioning-b.png)
+![Enable Versioning](../../screenshots/01-foundations/s3/03-enable-versioning-b.png)
 
-![Enable Versioning](../screenshots/s3/03-enable-versioning-c.png)
+![Enable Versioning](../../screenshots/01-foundations/s3/03-enable-versioning-c.png)
 
 
 Now test it:
 
 Via Console
 
-![Enable Versioning](../screenshots/s3/04-test-versioning-in-console-a.png)
+![Enable Versioning](../../screenshots/01-foundations/s3/04-test-versioning-in-console-a.png)
 
-![Enable Versioning](../screenshots/s3/04-test-versioning-in-console-b.png)
+![Enable Versioning](../../screenshots/01-foundations/s3/04-test-versioning-in-console-b.png)
 
 
 ```bash
@@ -150,9 +150,9 @@ aws s3 cp test.txt s3://lab1-demo-s3-bucket/test.txt
 aws s3api list-object-versions --bucket lab1-demo-s3-bucket
 ```
 
-![Enable Versioning](../screenshots/s3/04-test-versioning-a.png)
+![Enable Versioning](../../screenshots/01-foundations/s3/04-test-versioning-a.png)
 
-![Enable Versioning](../screenshots/s3/04-test-versioning-b.png)
+![Enable Versioning](../../screenshots/01-foundations/s3/04-test-versioning-b.png)
 
 
 You will see both versions with different `VersionId` values. You can restore v1 at any time.
@@ -197,9 +197,9 @@ Always enforce encryption in transit:
 
 > This denies any request that does not use HTTPS. HTTP requests carry data in plaintext — unacceptable for any sensitive data.
 
-![Policy 1](../screenshots/s3/05-create-policy-deny-non-https-a.png)
+![Policy 1](../../screenshots/01-foundations/s3/05-create-policy-deny-non-https-a.png)
 
-![Policy 1](../screenshots/s3/05-create-policy-deny-non-https-b.png)
+![Policy 1](../../screenshots/01-foundations/s3/05-create-policy-deny-non-https-b.png)
 
 
 ### Policy 2 — Allow a specific IAM user read access
@@ -226,7 +226,7 @@ Add a second statement to the same policy:
 
 Replace `YOUR-ACCOUNT-ID` with your 12-digit AWS account number (found in the top-right of the console).
 
-![Policy 1](../screenshots/s3/05-create-policy-to-allow-specific-user-a.png)
+![Policy 1](../../screenshots/01-foundations/s3/05-create-policy-to-allow-specific-user-a.png)
 
 ---
 
@@ -244,7 +244,7 @@ S3 → Create bucket
   Versioning:           Disabled (logs don't need versioning)
 ```
 
-![Create a Logging Bucket](../screenshots/s3/06-create-lab1-logs-s3-bucket.png)
+![Create a Logging Bucket](../../screenshots/01-foundations/s3/06-create-lab1-logs-s3-bucket.png)
 
 ### Enable logging on the main bucket
 
@@ -255,21 +255,21 @@ lab1-demo-s3-bucket → Properties → Server access logging → Edit
   Target prefix:  s3-access-logs/
 ```
 
-![Enable Logging](../screenshots/s3/07-enable-logging-on-main-bucket-a.png)
+![Enable Logging](../../screenshots/01-foundations/s3/07-enable-logging-on-main-bucket-a.png)
 
-![Enable Logging](../screenshots/s3/07-enable-logging-on-main-bucket-b.png)
+![Enable Logging](../../screenshots/01-foundations/s3/07-enable-logging-on-main-bucket-b.png)
 
-![Enable Logging](../screenshots/s3/07-enable-logging-on-main-bucket-c.png)
+![Enable Logging](../../screenshots/01-foundations/s3/07-enable-logging-on-main-bucket-c.png)
 
-![Enable Logging](../screenshots/s3/07-enable-logging-on-main-bucket-d.png)
+![Enable Logging](../../screenshots/01-foundations/s3/07-enable-logging-on-main-bucket-d.png)
 
 > After a few minutes, access your main bucket a few times, then check the log bucket. You will see log entries showing every request — requestor IP, operation, response code, bytes transferred. This is your S3 forensic audit trail.
 
-![Confirm Logging is working](../screenshots/s3/08-check-if-logging-works-a.png)
+![Confirm Logging is working](../../screenshots/01-foundations/s3/08-check-if-logging-works-a.png)
 
-![Confirm Logging is working](../screenshots/s3/08-check-if-logging-works-b.png)
+![Confirm Logging is working](../../screenshots/01-foundations/s3/08-check-if-logging-works-b.png)
 
-![Confirm Logging is working](../screenshots/s3/08-check-if-logging-works-c.png)
+![Confirm Logging is working](../../screenshots/01-foundations/s3/08-check-if-logging-works-c.png)
 
 ---
 
@@ -283,11 +283,11 @@ Bucket → Management → Create lifecycle rule
   Apply to all objects: Yes
 ```
 
-![Create Lifecycle Policy](../screenshots/s3/09-create-life-cycle-policy-a.png)
+![Create Lifecycle Policy](../../screenshots/01-foundations/s3/09-create-life-cycle-policy-a.png)
 
-![Create Lifecycle Policy](../screenshots/s3/09-create-life-cycle-policy-b.png)
+![Create Lifecycle Policy](../../screenshots/01-foundations/s3/09-create-life-cycle-policy-b.png)
 
-![Create Lifecycle Policy](../screenshots/s3/09-create-life-cycle-policy-c.png)
+![Create Lifecycle Policy](../../screenshots/01-foundations/s3/09-create-life-cycle-policy-c.png)
 
 
 Configure transitions:
@@ -311,11 +311,11 @@ S3 → Block Public Access settings for this account → Edit
 → Block all public access: ON → Save
 ```
 
-![Block Public IP Access](../screenshots/s3/10-block-public-access-a.png)
+![Block Public IP Access](../../screenshots/01-foundations/s3/10-block-public-access-a.png)
 
-![Block Public IP Access](../screenshots/s3/10-block-public-access-b.png)
+![Block Public IP Access](../../screenshots/01-foundations/s3/10-block-public-access-b.png)
 
-![Block Public IP Access](../screenshots/s3/10-block-public-access-c.png)
+![Block Public IP Access](../../screenshots/01-foundations/s3/10-block-public-access-c.png)
 
 
 > **This is the control that prevents the classic S3 data breach.** A developer creates a bucket and accidentally makes it public. If account-level Block Public Access is on, that mistake is impossible.
@@ -333,9 +333,9 @@ aws s3 presign s3://lab1-demo-s3-bucket/myfile.txt --expires-in 3600
 
 Output is a long URL anyone can paste into a browser to download the file — for exactly 1 hour.
 
-![Pre-Signed URL](../screenshots/s3/11-presigned-url-a.png)
+![Pre-Signed URL](../../screenshots/01-foundations/s3/11-presigned-url-a.png)
 
-![Pre-Signed URL](../screenshots/s3/11-presigned-url-a.png)
+![Pre-Signed URL](../../screenshots/01-foundations/s3/11-presigned-url-a.png)
 
 > **Security relevance:** Presigned URLs are widely used in applications. They are also a common attack vector — attackers with S3 read permissions can generate presigned URLs to exfiltrate data without triggering bucket policy alerts (the request looks like it comes from an authorized IAM identity). Covered in `25-s3-misconfiguration-attacks.md`.
 

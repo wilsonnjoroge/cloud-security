@@ -1,4 +1,4 @@
-# 🏠 Security Hub — Centralized Security Posture
+# 🏠 Security Hub: Centralized Security Posture
 
 > **Phase 2 · Document 12 of 29**  
 > **Estimated cost:** ~$1–2/month · **Estimated time:** 45 minutes  
@@ -8,7 +8,7 @@
 
 ## What Is Security Hub?
 
-Security Hub is your central security dashboard for AWS. It aggregates findings from GuardDuty, Config, Inspector, Macie, Firewall Manager, and third-party tools — giving you one place to see your entire security posture instead of checking each service separately.
+Security Hub is your central security dashboard for AWS. It aggregates findings from GuardDuty, Config, Inspector, Macie, Firewall Manager, and third-party tools: giving you one place to see your entire security posture instead of checking each service separately.
 
 ```
 GuardDuty findings ─────┐
@@ -34,7 +34,7 @@ Macie findings      ─────┤                 ──→ Compliance scor
 
 ---
 
-## Step 1 — Enable Security Hub
+## Step 1: Enable Security Hub
 
 **Console path:** `Security Hub → Go to Security Hub → Enable Security Hub`
 
@@ -52,9 +52,9 @@ Security Hub automatically begins pulling findings from GuardDuty and Config (if
 
 ---
 
-## Step 2 — Understand the Security Score
+## Step 2: Understand the Security Score
 
-After 30 minutes, Security Hub displays a **Security score** — a percentage representing how many security controls you are passing.
+After 30 minutes, Security Hub displays a **Security score**: a percentage representing how many security controls you are passing.
 
 ```
 Security Hub → Summary → Security score: 47%
@@ -70,7 +70,7 @@ Each failed control shows:
 
 ---
 
-## Step 3 — Navigate Findings
+## Step 3: Navigate Findings
 
 **Console path:** `Security Hub → Findings`
 
@@ -95,7 +95,7 @@ Filter findings by:
 
 ---
 
-## Step 4 — Review CIS Benchmark Controls
+## Step 4: Review CIS Benchmark Controls
 
 The CIS AWS Foundations Benchmark is the industry standard for AWS hardening. Security Hub automates its 50+ checks.
 
@@ -118,13 +118,13 @@ Fix each one, re-evaluate, and watch your score rise.
 
 ---
 
-## Step 5 — Create Custom Insights
+## Step 5: Create Custom Insights
 
 Insights are saved queries that group findings by a meaningful dimension.
 
 **Console path:** `Security Hub → Insights → Create insight`
 
-### Insight 1 — Critical findings by resource
+### Insight 1: Critical findings by resource
 
 ```
 Group by: Resource ID
@@ -133,7 +133,7 @@ Filter:   Severity = CRITICAL
 Name:     Critical findings by resource
 ```
 
-### Insight 2 — New findings in last 24 hours
+### Insight 2: New findings in last 24 hours
 
 ```
 Group by: Product name
@@ -142,7 +142,7 @@ Filter:   Created at = last 24 hours
 Name:     New findings today
 ```
 
-### Insight 3 — Open high-severity IAM findings
+### Insight 3: Open high-severity IAM findings
 
 ```
 Group by: Resource type
@@ -154,7 +154,7 @@ Name:     High severity IAM issues
 
 ---
 
-## Step 6 — Set Up Automated Response with EventBridge
+## Step 6: Set Up Automated Response with EventBridge
 
 Automatically respond to critical findings:
 
@@ -195,7 +195,7 @@ def lambda_handler(event, context):
 
 ---
 
-## Step 7 — Integrate AWS Inspector
+## Step 7: Integrate AWS Inspector
 
 Inspector scans your EC2 instances and container images for vulnerabilities (CVEs).
 
@@ -213,11 +213,11 @@ Package:  nghttp2-1.41.0-1
 Fix:      Update to nghttp2-1.43.0-2
 ```
 
-> Inspector gives you vulnerability management integrated with your security posture. Critical CVEs on internet-facing instances are HIGH priority — an attacker can exploit these before you patch.
+> Inspector gives you vulnerability management integrated with your security posture. Critical CVEs on internet-facing instances are HIGH priority: an attacker can exploit these before you patch.
 
 ---
 
-## Step 8 — Integrate Macie for Data Classification
+## Step 8: Integrate Macie for Data Classification
 
 Macie discovers and classifies sensitive data in S3 buckets.
 
@@ -235,7 +235,7 @@ Macie scans S3 and flags:
 
 ---
 
-## Step 9 — Workflow Management
+## Step 9: Workflow Management
 
 Security Hub is only useful if you triage findings systematically.
 
@@ -300,7 +300,7 @@ aws securityhub get-enabled-standards
 
 # To disable (stops all findings):
 Security Hub → Settings → General → Disable Security Hub
-Note: Disabling deletes all findings — export first if needed
+Note: Disabling deletes all findings: export first if needed
 ```
 
 ---

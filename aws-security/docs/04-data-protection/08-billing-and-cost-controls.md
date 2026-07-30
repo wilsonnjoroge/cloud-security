@@ -43,17 +43,17 @@ Billing → Billing preferences → Alert preferences
 → Save preferences
 ```
 
-![Setting billing preference](../screenshots/billing-and-cost/01-setting-billing-preference-a.png)
+![Setting billing preference](../../screenshots/04-data-protection/billing-and-cost/01-setting-billing-preference-a.png)
 
-![Setting billing preference](../screenshots/billing-and-cost/01-setting-billing-preference-b.png)
+![Setting billing preference](../../screenshots/04-data-protection/billing-and-cost/01-setting-billing-preference-b.png)
 
-![Setting billing preference](../screenshots/billing-and-cost/01-setting-billing-preference-c.png)
+![Setting billing preference](../../screenshots/04-data-protection/billing-and-cost/01-setting-billing-preference-c.png)
 
 ### Create budget alerts at three levels
 
 **Console path:** `Billing → Budgets → Create budget`
 
-![Create budget](../screenshots/billing-and-cost/02-create-budget-a.png)
+![Create budget](../../screenshots/04-data-protection/billing-and-cost/02-create-budget-a.png)
 
 #### Budget 1: Early warning at $20
 
@@ -65,7 +65,7 @@ Billing → Billing preferences → Alert preferences
 | Alert threshold | 80% actual ($16) → email |
 | Alert threshold | 100% actual ($20) → email |
 
-![Create cost budget - $20](../screenshots/billing-and-cost/02-create-cost-budget-20.png)
+![Create cost budget - $20](../../screenshots/04-data-protection/billing-and-cost/02-create-cost-budget-20.png)
 
 #### Budget 2: Serious warning at $50
 
@@ -75,7 +75,7 @@ Billing → Billing preferences → Alert preferences
 | Budgeted amount | $50 |
 | Alert threshold | 100% actual ($50) → email |
 
-![Create cost budget - $50](../screenshots/billing-and-cost/02-create-cost-budget-50.png)
+![Create cost budget - $50](../../screenshots/04-data-protection/billing-and-cost/02-create-cost-budget-50.png)
 
 #### Budget 3: Emergency at $100
 
@@ -85,7 +85,7 @@ Billing → Billing preferences → Alert preferences
 | Budgeted amount | $100 |
 | Alert threshold | 100% actual ($100) → email + SMS |
 
-![Create cost budget - $80](../screenshots/billing-and-cost/02-create-cost-budget-80.png)
+![Create cost budget - $80](../../screenshots/04-data-protection/billing-and-cost/02-create-cost-budget-80.png)
 
 > ⚠️ **Verify before finalizing:** the screenshot on file for this step is named `02-create-cost-budget-80.png`, suggesting the third budget may have been configured at $80 rather than $100 as written above. Confirm which value is actually correct in the console and align the doc text and screenshot filename before treating this as final.
 
@@ -101,9 +101,9 @@ Cost Explorer lets you see exactly what you are spending and where.
 Billing → Cost Explorer → Enable Cost Explorer
 ```
 
-![Enable Cost Explorer](../screenshots/billing-and-cost/03-enable-cost-explorer.png)
+![Enable Cost Explorer](../../screenshots/04-data-protection/billing-and-cost/03-enable-cost-explorer.png)
 
-![Enable Cost Explorer](../screenshots/billing-and-cost/03-enable-cost-explorer-b.png)
+![Enable Cost Explorer](../../screenshots/04-data-protection/billing-and-cost/03-enable-cost-explorer-b.png)
 
 It takes 24 hours to populate. Once active, use it to:
 - See spending by service
@@ -161,7 +161,7 @@ Activate these tags:
 - `Sub-Project`
 - `Owner`
 
-![Cost allocation tags](../screenshots/billing-and-cost/04-cost-allocation-tags-a.png)
+![Cost allocation tags](../../screenshots/04-data-protection/billing-and-cost/04-cost-allocation-tags-a.png)
 
 Then tag every resource you create:
 
@@ -189,11 +189,11 @@ Trusted Advisor checks your account for cost savings, security issues, and perfo
 Trusted Advisor → Cost optimization
 ```
 
-![Trusted Advisor](../screenshots/billing-and-cost/05-trusted-advisor-a.png)
+![Trusted Advisor](../../screenshots/04-data-protection/billing-and-cost/05-trusted-advisor-a.png)
 
-![Trusted Advisor](../screenshots/billing-and-cost/05-trusted-advisor-b.png)
+![Trusted Advisor](../../screenshots/04-data-protection/billing-and-cost/05-trusted-advisor-b.png)
 
-![Trusted Advisor - downloaded cost optimization report](../screenshots/billing-and-cost/05-trusted-advisor-c-downloaded-cost-optimization.png)
+![Trusted Advisor - downloaded cost optimization report](../../screenshots/04-data-protection/billing-and-cost/05-trusted-advisor-c-downloaded-cost-optimization.png)
 
 Free tier checks include:
 - Idle EC2 instances (running but doing nothing)
@@ -247,7 +247,7 @@ Make this a habit:
 Billing → Bills → current month
 ```
 
-![Bills](../screenshots/billing-and-cost/06-bills.png)
+![Bills](../../screenshots/04-data-protection/billing-and-cost/06-bills.png)
 
 Look at each service line. Anything unexpected, investigate immediately. Small charges left unchecked become large bills.
 
@@ -260,11 +260,11 @@ Billing → Cost Anomaly Detection → Create monitor
   Notification: your email
 ```
 
-![Cost Anomaly Detection](../screenshots/billing-and-cost/07-cost-anomaly-detection-a.png)
+![Cost Anomaly Detection](../../screenshots/04-data-protection/billing-and-cost/07-cost-anomaly-detection-a.png)
 
-![Cost Anomaly Detection - create cost monitor](../screenshots/billing-and-cost/07-cost-anomaly-detection-create-cost-monitor-a.png)
+![Cost Anomaly Detection - create cost monitor](../../screenshots/04-data-protection/billing-and-cost/07-cost-anomaly-detection-create-cost-monitor-a.png)
 
-![Cost Anomaly Detection - create cost monitor](../screenshots/billing-and-cost/07-cost-anomaly-detection-create-cost-monitor-b.png)
+![Cost Anomaly Detection - create cost monitor](../../screenshots/04-data-protection/billing-and-cost/07-cost-anomaly-detection-create-cost-monitor-b.png)
 
 This sends an alert whenever spending on any service deviates significantly from your normal pattern.
 

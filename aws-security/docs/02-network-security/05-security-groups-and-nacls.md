@@ -50,16 +50,16 @@ Every VPC has a default security group. Look at it:
 EC2 → Security Groups → find the one named "default" in lab1-vpc
 ```
 
-![Default Security Group](../screenshots/security-groups-and-nacls/01-default-security-group-a.png)
+![Default Security Group](../../screenshots/02-network-security/security-groups-and-nacls/01-default-security-group-a.png)
 
 
 Inbound rules: allows all traffic **from other instances in the same security group**.  
 
-![Default Security Group](../screenshots/security-groups-and-nacls/01-default-security-group-inbound.png)
+![Default Security Group](../../screenshots/02-network-security/security-groups-and-nacls/01-default-security-group-inbound.png)
 
 Outbound rules: allows all traffic to anywhere.
 
-![Default Security Group](../screenshots/security-groups-and-nacls/01-default-security-group-outbound.png)
+![Default Security Group](../../screenshots/02-network-security/security-groups-and-nacls/01-default-security-group-outbound.png)
 
 
 > **Never use the default security group for your instances.** Always create purpose-built security groups with minimal rules. The default SG is a common misconfiguration that allows lateral movement between instances.
@@ -88,7 +88,7 @@ Inbound rules:
 
 Outbound rules: leave default (all traffic).
 
-![Web Security Group](../screenshots/security-groups-and-nacls/02-create-security-groups-web-server.png)
+![Web Security Group](../../screenshots/02-network-security/security-groups-and-nacls/02-create-security-groups-web-server.png)
 
 
 #### App server SG
@@ -105,7 +105,7 @@ Inbound rules:
 |------|------|--------|--------|
 | Custom TCP | 8080 | `lab1-web-server-sg` | Only web servers can reach app servers |
 
-![App Security Group](../screenshots/security-groups-and-nacls/02-create-security-groups-app-server.png)
+![App Security Group](../../screenshots/02-network-security/security-groups-and-nacls/02-create-security-groups-app-server.png)
 
 > **This is referencing a security group as a source**: not an IP range. Any instance with `lab1-web-server-sg` attached can reach this instance on port 8080. This is more secure than IP-based rules because it adapts automatically as instances are added or removed.
 
@@ -123,7 +123,7 @@ Inbound rules:
 |------|------|--------|--------|
 | MySQL/Aurora | 3306 | `lab1-app-server-sg` | Only app servers can reach the DB |
 
-![Database Security Group](../screenshots/security-groups-and-nacls/02-create-security-groups-database.png)
+![Database Security Group](../../screenshots/02-network-security/security-groups-and-nacls/02-create-security-groups-database.png)
 
 > This creates a tiered security architecture: Internet → Web (port 80/443) → App (port 8080) → Database (port 3306). Each layer can only talk to the layer directly adjacent to it.
 
@@ -167,7 +167,7 @@ The Network setup (VPC and routings)
 ```
 
 
-![VPC and Routing for Lab 1](../screenshots/security-groups-and-nacls/03-vpc-configuration-and-routing.png)
+![VPC and Routing for Lab 1](../../screenshots/02-network-security/security-groups-and-nacls/03-vpc-configuration-and-routing.png)
 
 
 > This architecture means even if the web server is compromised, the attacker cannot directly reach the database they must first pivot through the app server.
@@ -195,16 +195,16 @@ Launch two instances:
  
 - **Web Server** (`lab1-web-server`) in `lab1-public-subnet` using `lab1-web-server-sg`
 
-![Web Server](../screenshots/security-groups-and-nacls/04-lab1-web-server.png)
+![Web Server](../../screenshots/02-network-security/security-groups-and-nacls/04-lab1-web-server.png)
 
 - **App Server** (`lab1-app-server`) in `lab1-private-subnet` using `lab1-app-server-sg`.
 
 
 > Ensure the app server is in the private subnet, no public IP assigned and that it can connect with the ssm session manager
 
-![App Server](../screenshots/security-groups-and-nacls/04-lab1-app-server.png)
+![App Server](../../screenshots/02-network-security/security-groups-and-nacls/04-lab1-app-server.png)
 
-![App Server - Confirm Service](../screenshots/security-groups-and-nacls/04-lab1-app-server.png)
+![App Server - Confirm Service](../../screenshots/02-network-security/security-groups-and-nacls/04-lab1-app-server.png)
 
 
 **App Server Connectivity: Private Subnet, No NAT**
@@ -302,9 +302,9 @@ curl http://<app-server-private-ip>:8080
 nc -zv <app-server-private-ip> 3306
 ```
 
-![Curl test](../screenshots/security-groups-and-nacls/05-test-security-group-riles-curl-8080.png)
+![Curl test](../../screenshots/02-network-security/security-groups-and-nacls/05-test-security-group-riles-curl-8080.png)
 
-![nc test](../screenshots/security-groups-and-nacls/05-test-security-group-riles-nc-3306.png)
+![nc test](../../screenshots/02-network-security/security-groups-and-nacls/05-test-security-group-riles-nc-3306.png)
 
 
 > **Important:** Always test both Allow and Deny cases. A security control you haven't tested blocking is one you can't trust.
@@ -329,11 +329,11 @@ Default rules:
 
 The default NACL allows everything: it does not restrict traffic at all.
 
-![Default NACL Rules](../screenshots/security-groups-and-nacls/06-nacl-default-a.png)
+![Default NACL Rules](../../screenshots/02-network-security/security-groups-and-nacls/06-nacl-default-a.png)
 
-![Default NACL Inbound Rules](../screenshots/security-groups-and-nacls/06-nacl-default-inbound-rules.png)
+![Default NACL Inbound Rules](../../screenshots/02-network-security/security-groups-and-nacls/06-nacl-default-inbound-rules.png)
 
-![Default NACL Outbound Rules](../screenshots/security-groups-and-nacls/06-nacl-default-outbound-rules.png)
+![Default NACL Outbound Rules](../../screenshots/02-network-security/security-groups-and-nacls/06-nacl-default-outbound-rules.png)
 
 ---
 
@@ -348,9 +348,9 @@ The default NACL allows everything: it does not restrict traffic at all.
 
 A new NACL starts with **Deny all** on both inbound and outbound. You must explicitly add Allow rules.
 
-![Create Custom NACL](../screenshots/security-groups-and-nacls/07-create-a-custom-nacl-a.png)
+![Create Custom NACL](../../screenshots/02-network-security/security-groups-and-nacls/07-create-a-custom-nacl-a.png)
 
-![Create Custom NACL](../screenshots/security-groups-and-nacls/07-create-a-custom-nacl-b.png)
+![Create Custom NACL](../../screenshots/02-network-security/security-groups-and-nacls/07-create-a-custom-nacl-b.png)
 
 
 #### Inbound rules
@@ -363,9 +363,9 @@ A new NACL starts with **Deny all** on both inbound and outbound. You must expli
 | 130 | Custom TCP | 1024–65535 | `0.0.0.0/0` | Allow |
 | * | All traffic | All | `0.0.0.0/0` | Deny |
 
-![Create Custom NACL Inbound Rules](../screenshots/security-groups-and-nacls/08-edit-inbound-rule-a.png)
+![Create Custom NACL Inbound Rules](../../screenshots/02-network-security/security-groups-and-nacls/08-edit-inbound-rule-a.png)
 
-![Create Custom NACL Inbound Rules](../screenshots/security-groups-and-nacls/08-edit-inbound-rule-b.png)
+![Create Custom NACL Inbound Rules](../../screenshots/02-network-security/security-groups-and-nacls/08-edit-inbound-rule-b.png)
 
 > **Why rule 130?** NACLs are stateless. When your instance responds to an HTTP request, the response goes back on an ephemeral port (1024–65535). You must explicitly allow this return traffic inbound: unlike security groups which handle this automatically.
 
@@ -378,9 +378,9 @@ A new NACL starts with **Deny all** on both inbound and outbound. You must expli
 | 120 | Custom TCP | 1024–65535 | `0.0.0.0/0` | Allow |
 | * | All traffic | All | `0.0.0.0/0` | Deny |
 
-![Create Custom NACL Outbound Rules](../screenshots/security-groups-and-nacls/08-edit-outbound-rule-a.png)
+![Create Custom NACL Outbound Rules](../../screenshots/02-network-security/security-groups-and-nacls/08-edit-outbound-rule-a.png)
 
-![Create Custom NACL Outbound Rules](../screenshots/security-groups-and-nacls/08-edit-outbound-rule-b.png)
+![Create Custom NACL Outbound Rules](../../screenshots/02-network-security/security-groups-and-nacls/08-edit-outbound-rule-b.png)
 
 
 Associate with subnet:
@@ -388,9 +388,9 @@ Associate with subnet:
 ```
 Subnet associations → Edit subnet associations → select lab1-public-subnet
 ```
-![Associate To Subnet](../screenshots/security-groups-and-nacls/09-associate-to-public-subnet-a.png)
+![Associate To Subnet](../../screenshots/02-network-security/security-groups-and-nacls/09-associate-to-public-subnet-a.png)
 
-![Associate To Subnet](../screenshots/security-groups-and-nacls/09-associate-to-public-subnet-b.png)
+![Associate To Subnet](../../screenshots/02-network-security/security-groups-and-nacls/09-associate-to-public-subnet-b.png)
 
 ---
 

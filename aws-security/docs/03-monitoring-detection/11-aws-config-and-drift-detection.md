@@ -42,9 +42,9 @@ AWS Config records configuration snapshot
 
 **Console path:** `AWS Config → Get started`
 
-![Access AWS Config - search](../screenshots/aws-config/01-access-aws-configs-a.png)
+![Access AWS Config - search](../../screenshots/03-monitoring-detection/aws-config/01-access-aws-configs-a.png)
 
-![Access AWS Config - landing page](../screenshots/aws-config/01-access-aws-configs-b.png)
+![Access AWS Config - landing page](../../screenshots/03-monitoring-detection/aws-config/01-access-aws-configs-b.png)
 
 | Field | Value |
 |-------|-------|
@@ -54,11 +54,11 @@ AWS Config records configuration snapshot
 | SNS topic | Create new → `lab1-config-alerts` |
 | AWS Config role | Create new role |
 
-![Set up AWS Config - recording strategy](../screenshots/aws-config/02-set-aws-configs-a.png)
+![Set up AWS Config - recording strategy](../../screenshots/03-monitoring-detection/aws-config/02-set-aws-configs-a.png)
 
-![Set up AWS Config - IAM role and S3 bucket](../screenshots/aws-config/02-set-aws-configs-iam-and-bucket.png)
+![Set up AWS Config - IAM role and S3 bucket](../../screenshots/03-monitoring-detection/aws-config/02-set-aws-configs-iam-and-bucket.png)
 
-![Set up AWS Config - SNS topic](../screenshots/aws-config/02-set-aws-configs-sns-topic.png)
+![Set up AWS Config - SNS topic](../../screenshots/03-monitoring-detection/aws-config/02-set-aws-configs-sns-topic.png)
 
 On the rules, select the following:
 
@@ -75,11 +75,11 @@ On the rules, select the following:
 | `vpc-flow-logs-enabled` | Flow logs turned off on a VPC | Confirms the network evidence trail from doc 10 stays enforced going forward |
 | `ec2-instance-no-public-ip` | EC2 instances with a public IP, scoped to ones that shouldn't have one | Relevant specifically for private-tier instances (e.g. the app server), which should never have a public IP |
 
-![Set up AWS Config - rules to be watched](../screenshots/aws-config/02-set-aws-configs-rules-to-be-watched.png)
+![Set up AWS Config - rules to be watched](../../screenshots/03-monitoring-detection/aws-config/02-set-aws-configs-rules-to-be-watched.png)
 
 Click **Confirm**.
 
-![Rules compliance results after setup](../screenshots/aws-config/02-set-aws-configs-rules-to-be-watched-b.png)
+![Rules compliance results after setup](../../screenshots/03-monitoring-detection/aws-config/02-set-aws-configs-rules-to-be-watched-b.png)
 
 ---
 
@@ -96,7 +96,7 @@ Browse the resources Config has discovered:
 - S3 buckets
 - IAM users, roles, and policies
 
-![Explore resources inventory / dashboard](../screenshots/aws-config/03-explore-resources-inventory.png)
+![Explore resources inventory / dashboard](../../screenshots/03-monitoring-detection/aws-config/03-explore-resources-inventory.png)
 
 Click on any resource to see its **configuration timeline**: a history of every change ever made to it.
 
@@ -134,9 +134,9 @@ Example: flag any EC2 instance not tagged with `Environment`:
 
 **Console path:** `Lambda → Create function`
 
-![Lambda landing page - create a function](../screenshots/aws-config/04-create-lambda-custom-rule-a.png)
+![Lambda landing page - create a function](../../screenshots/03-monitoring-detection/aws-config/04-create-lambda-custom-rule-a.png)
 
-![Create function - basic information](../screenshots/aws-config/2026-07-14_21-42.png)
+![Create function - basic information](../../screenshots/03-monitoring-detection/aws-config/2026-07-14_21-42.png)
 
 ```python
 import boto3
@@ -169,7 +169,7 @@ def lambda_handler(event, context):
 
 > **Before wiring this up in Config:** the default Lambda execution role only has permission to write to CloudWatch Logs — it does **not** include `config:PutEvaluations`, which this function calls directly. Attach the AWS-managed `AWSConfigRulesExecutionRole` policy to the function's execution role (`IAM → Roles → CheckEnvironmentTag-role-xxxx → Add permissions → Attach policy`), or the function will fail with an AccessDenied error the first time Config invokes it.
 
-![Function created - code pasted and deployed](../screenshots/aws-config/04-create-lambda-custom-rule-b.png)
+![Function created - code pasted and deployed](../../screenshots/03-monitoring-detection/aws-config/04-create-lambda-custom-rule-b.png)
 
 Then in AWS Config:
 
@@ -180,9 +180,9 @@ Rules → Add rule → Create custom Lambda rule
   Trigger:    Configuration changes → EC2 instance
 ```
 
-![Create custom rule - review and create](../screenshots/aws-config/03-create-custom-rule-2.png)
+![Create custom rule - review and create](../../screenshots/03-monitoring-detection/aws-config/03-create-custom-rule-2.png)
 
-![Custom rule added confirmation](../screenshots/aws-config/03-create-custom-rule-3.png)
+![Custom rule added confirmation](../../screenshots/03-monitoring-detection/aws-config/03-create-custom-rule-3.png)
 
 ---
 
@@ -194,7 +194,7 @@ Conformance packs bundle multiple Config rules into a single deployable package.
 AWS Config → Conformance packs → Deploy conformance pack
 ```
 
-![Deploy conformance pack - empty state](../screenshots/aws-config/05-deploy-conformance-packs-a.png)
+![Deploy conformance pack - empty state](../../screenshots/03-monitoring-detection/aws-config/05-deploy-conformance-packs-a.png)
 
 Useful packs:
 
@@ -205,7 +205,7 @@ Useful packs:
 | `PCI-DSS` | Payment Card Industry DSS |
 | `CIS-AWS-Foundations-Benchmark` | CIS AWS Foundations |
 
-![Conformance packs deployed](../screenshots/aws-config/05-deploy-conformance-packs-b.png)
+![Conformance packs deployed](../../screenshots/03-monitoring-detection/aws-config/05-deploy-conformance-packs-b.png)
 
 > For your cybersecurity career, familiarity with CIS Benchmarks and NIST 800-53 is essential. Config makes compliance measurable and continuous rather than a point-in-time audit.
 

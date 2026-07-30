@@ -1,4 +1,4 @@
-# 🔎 CloudTrail Log Analysis — Attacker Timeline Reconstruction
+# 🔎 CloudTrail Log Analysis: Attacker Timeline Reconstruction
 
 > **Phase 3 · Document 17 of 29**  
 > **Estimated cost:** Free (uses existing CloudTrail) · **Estimated time:** 60–90 minutes  
@@ -62,12 +62,12 @@ Defense Evasion
 
 ---
 
-## Step 1 — Set Up the Investigation Environment
+## Step 1: Set Up the Investigation Environment
 
 For this exercise, simulate an attack sequence so you have logs to investigate.
 
 ```bash
-# Using dev-alice credentials — simulate attacker who stole them
+# Using dev-willy credentials: simulate attacker who stole them
 
 # Discovery phase
 aws iam list-users
@@ -79,7 +79,7 @@ aws ec2 describe-security-groups
 
 # Privilege escalation attempt
 aws iam attach-user-policy \
-  --user-name dev-alice \
+  --user-name dev-willy \
   --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
 
 # Access secrets
@@ -87,8 +87,8 @@ aws secretsmanager list-secrets
 aws secretsmanager get-secret-value --secret-id lab/database/credentials
 
 # Access S3 data
-aws s3 ls s3://lab-private-yourname-2024/
-aws s3 cp s3://lab-private-yourname-2024/ /tmp/ --recursive
+aws s3 ls s3://lab1-cloudtrail-logs-willy
+aws s3 cp s3://lab1-cloudtrail-logs-willy /tmp/ --recursive
 
 # Attempt to disable CloudTrail (this will likely fail without perms)
 aws cloudtrail stop-logging --name lab-audit-trail
@@ -96,38 +96,44 @@ aws cloudtrail stop-logging --name lab-audit-trail
 
 Wait 5–10 minutes for logs to propagate to CloudWatch Logs.
 
+![Generating logs with dev-willy credentials](../../screenshots/05-dfir/cloudtrail-log-analysis/01-generate-logs-with-dev-willy-credentials.png)
+
 ---
 
-## Step 2 — Reconstruct the Attack Timeline
+## Step 2: Reconstruct the Attack Timeline
 
-### Query 1 — All activity by the compromised identity
+### Query 1: All activity by the compromised identity
 
 ```sql
 -- CloudWatch Logs Insights
 fields eventTime, eventName, sourceIPAddress, errorCode, userAgent
-| filter userIdentity.userName = "dev-alice"
+| filter userIdentity.userName = "dev-willy"
 | sort eventTime asc
 | limit 200
 ```
 
 This gives you the full chronological sequence of everything the compromised identity did.
 
-### Query 2 — Identify the initial access point
+![All activity by the compromised identity](../../screenshots/05-dfir/cloudtrail-log-analysis/02-all-activity-by-the-compromised-identity.png)
+
+### Query 2: Identify the initial access point
 
 ```sql
 fields eventTime, eventName, sourceIPAddress, userAgent
-| filter userIdentity.userName = "dev-alice"
+| filter userIdentity.userName = "dev-willy"
 | filter eventName = "ConsoleLogin" OR eventName = "GetSessionToken"
 | sort eventTime asc
 ```
 
-Note the `sourceIPAddress` — compare it to known legitimate IPs for this user. An unfamiliar IP means the credentials were used from a new location (attacker's machine).
+Note the `sourceIPAddress`: compare it to known legitimate IPs for this user. An unfamiliar IP means the credentials were used from a new location (attacker's machine).
 
-### Query 3 — Discovery phase (reconnaissance)
+![Identify the initial access point](../../screenshots/05-dfir/cloudtrail-log-analysis/03-dentify-the-initial-access-point.png)
+
+### Query 3: Discovery phase (reconnaissance)
 
 ```sql
 fields eventTime, eventName, sourceIPAddress
-| filter userIdentity.userName = "dev-alice"
+| filter userIdentity.userName = "dev-willy"
 | filter eventName in [
     "ListBuckets", "ListUsers", "ListRoles",
     "DescribeInstances", "DescribeSecurityGroups",
@@ -139,11 +145,13 @@ fields eventTime, eventName, sourceIPAddress
 
 A cluster of List/Describe calls in a short time window = reconnaissance phase.
 
-### Query 4 — Privilege escalation attempts
+![Discovery phase](../../screenshots/05-dfir/cloudtrail-log-analysis/04-discovery-phase.png)
+
+### Query 4: Privilege escalation attempts
 
 ```sql
 fields eventTime, eventName, requestParameters, errorCode
-| filter userIdentity.userName = "dev-alice"
+| filter userIdentity.userName = "dev-willy"
 | filter eventName in [
     "AttachUserPolicy", "PutUserPolicy", "DetachUserPolicy",
     "AttachRolePolicy", "PutRolePolicy",
@@ -154,24 +162,28 @@ fields eventTime, eventName, requestParameters, errorCode
 | sort eventTime asc
 ```
 
-### Query 5 — Data access (exfiltration evidence)
+![Privilege escalation](../../screenshots/05-dfir/cloudtrail-log-analysis/05-priviledge-escalation.png)
+
+### Query 5: Data access (exfiltration evidence)
 
 ```sql
 fields eventTime, eventName, requestParameters.bucketName,
        requestParameters.key, sourceIPAddress
-| filter userIdentity.userName = "dev-alice"
+| filter userIdentity.userName = "dev-willy"
 | filter eventName in ["GetObject", "ListObjectsV2", "GetSecretValue",
                         "GetParameter", "Decrypt"]
 | sort eventTime asc
 ```
 
-This is your exfiltration evidence — what data was accessed, when, from where.
+This is your exfiltration evidence: what data was accessed, when, from where.
 
-### Query 6 — Defense evasion attempts
+![Data access](../../screenshots/05-dfir/cloudtrail-log-analysis/06-data-access.png)
+
+### Query 6: Defense evasion attempts
 
 ```sql
 fields eventTime, eventName, errorCode, sourceIPAddress
-| filter userIdentity.userName = "dev-alice"
+| filter userIdentity.userName = "dev-willy"
 | filter eventName in [
     "DeleteTrail", "StopLogging", "UpdateTrail",
     "DeleteFlowLogs", "DeleteAlarms",
@@ -180,46 +192,48 @@ fields eventTime, eventName, errorCode, sourceIPAddress
 | sort eventTime asc
 ```
 
-Failed attempts (errorCode is not null) are still evidence — they show intent even if the action didn't succeed.
+Failed attempts (errorCode is not null) are still evidence: they show intent even if the action didn't succeed.
+
+![Defense evasion](../../screenshots/05-dfir/cloudtrail-log-analysis/07-defence-evation.png)
 
 ---
 
-## Step 3 — Build the Attacker Timeline
+## Step 3: Build the Attacker Timeline
 
 Using your query results, construct a formal timeline:
 
 ```markdown
-## Incident Timeline — IR-2024-001
+## Incident Timeline: IR-2024-001
 
 All times UTC
 
-14:03:22  ConsoleLogin — dev-alice — sourceIP: 198.51.100.42
-          (First appearance of attacker IP — credentials compromised)
+14:03:22  ConsoleLogin: dev-willy: sourceIP: 198.51.100.42
+          (First appearance of attacker IP: credentials compromised)
 
-14:03:45  ListBuckets — dev-alice — 198.51.100.42
-14:03:47  DescribeInstances — dev-alice — 198.51.100.42
-14:03:49  ListUsers — dev-alice — 198.51.100.42
-14:03:51  GetAccountAuthorizationDetails — dev-alice — 198.51.100.42
+14:03:45  ListBuckets: dev-willy: 198.51.100.42
+14:03:47  DescribeInstances: dev-willy: 198.51.100.42
+14:03:49  ListUsers: dev-willy: 198.51.100.42
+14:03:51  GetAccountAuthorizationDetails: dev-willy: 198.51.100.42
           (Reconnaissance phase: ~29 seconds, mapped entire account)
 
-14:04:10  AttachUserPolicy — dev-alice — attached AdministratorAccess
-          errorCode: null (SUCCEEDED — privilege escalation successful)
+14:04:10  AttachUserPolicy: dev-willy: attached AdministratorAccess
+          errorCode: null (SUCCEEDED: privilege escalation successful)
 
-14:04:35  ListSecrets — dev-alice — 198.51.100.42
-14:04:38  GetSecretValue — lab/database/credentials — 198.51.100.42
-14:04:41  GetSecretValue — lab/api/external-service — 198.51.100.42
+14:04:35  ListSecrets: dev-willy: 198.51.100.42
+14:04:38  GetSecretValue: lab/database/credentials: 198.51.100.42
+14:04:41  GetSecretValue: lab/api/external-service: 198.51.100.42
           (Secret exfiltration: 3 secrets accessed in 6 seconds)
 
-14:05:12  ListObjectsV2 — lab-private-yourname-2024 — 198.51.100.42
-14:05:15  GetObject × 47 — lab-private-yourname-2024 — 198.51.100.42
+14:05:12  ListObjectsV2: lab-private-yourname-2024: 198.51.100.42
+14:05:15  GetObject × 47: lab-private-yourname-2024: 198.51.100.42
           (S3 exfiltration: 47 objects downloaded)
 
-14:06:02  StopLogging — lab-audit-trail
-          errorCode: AccessDenied (attempted to disable CloudTrail — FAILED)
+14:06:02  StopLogging: lab-audit-trail
+          errorCode: AccessDenied (attempted to disable CloudTrail: FAILED)
 
-14:06:15  CreateUser — attacker-backdoor — 198.51.100.42
-14:06:18  AttachUserPolicy — attacker-backdoor — AdministratorAccess
-14:06:20  CreateAccessKey — attacker-backdoor
+14:06:15  CreateUser: attacker-backdoor: 198.51.100.42
+14:06:18  AttachUserPolicy: attacker-backdoor: AdministratorAccess
+14:06:20  CreateAccessKey: attacker-backdoor
           (Persistence: created backdoor admin user with keys)
 
 Total dwell time before detection: 3 minutes 18 seconds
@@ -227,7 +241,7 @@ Total dwell time before detection: 3 minutes 18 seconds
 
 ---
 
-## Step 4 — Identify the Blast Radius
+## Step 4: Identify the Blast Radius
 
 Determine everything the attacker touched:
 
@@ -236,33 +250,39 @@ Determine everything the attacker touched:
 ```sql
 -- All resources the attacker interacted with
 fields eventTime, eventName, resources
-| filter userIdentity.userName = "dev-alice"
+| filter userIdentity.userName = "dev-willy"
 | filter ispresent(resources)
 | sort eventTime asc
 ```
+
+![Resources affected](../../screenshots/05-dfir/cloudtrail-log-analysis/08-resources-affected.png)
 
 ### Affected data
 
 ```sql
 -- Every S3 object accessed
 fields eventTime, requestParameters.bucketName, requestParameters.key
-| filter userIdentity.userName = "dev-alice"
+| filter userIdentity.userName = "dev-willy"
 | filter eventName = "GetObject"
 | stats count(*) as accessed by requestParameters.bucketName
 ```
+
+![Data affected](../../screenshots/05-dfir/cloudtrail-log-analysis/09-data-affected.png)
 
 ### Credentials created (persistence mechanisms)
 
 ```sql
 fields eventTime, eventName, requestParameters, responseElements
-| filter userIdentity.userName = "dev-alice"
+| filter userIdentity.userName = "dev-willy"
 | filter eventName in ["CreateUser", "CreateAccessKey",
                         "CreateLoginProfile", "AddUserToGroup"]
 ```
 
+![Credentials affected](../../screenshots/05-dfir/cloudtrail-log-analysis/10-credentials-affected.png)
+
 ---
 
-## Step 5 — Correlate with VPC Flow Logs
+## Step 5: Correlate with VPC Flow Logs
 
 After identifying the attacker's actions in CloudTrail, correlate with network traffic:
 
@@ -273,11 +293,13 @@ fields @timestamp, srcaddr, dstaddr, dstport, bytes, action
 | sort @timestamp asc
 ```
 
-This shows which instances the attacker's IP connected to directly — not just what they did via the API, but what systems they accessed over the network.
+This shows which instances the attacker's IP connected to directly: not just what they did via the API, but what systems they accessed over the network.
+
+![Correlate with VPC flow logs](../../screenshots/05-dfir/cloudtrail-log-analysis/12-correlate-with-vpc-logs.png)
 
 ---
 
-## Step 6 — CloudTrail Lake for Complex Investigations
+## Step 6: CloudTrail Lake for Complex Investigations
 
 For complex multi-account investigations, CloudTrail Lake SQL is more powerful:
 
@@ -317,7 +339,7 @@ ORDER BY eventTime DESC;
 
 ---
 
-## Step 7 — Automate Timeline Generation
+## Step 7: Automate Timeline Generation
 
 ```python
 import boto3
@@ -364,23 +386,23 @@ def get_attack_timeline(username, hours_back=24):
     return events
 
 # Run it
-timeline = get_attack_timeline('dev-alice', hours_back=2)
+timeline = get_attack_timeline('dev-willy', hours_back=2)
 ```
 
 ---
 
-## Step 8 — Write the Incident Report
+## Step 8: Write the Incident Report
 
 A complete incident report from CloudTrail evidence:
 
 ```markdown
-## Incident Report — IR-2024-001
+## Incident Report: IR-2024-001
 **Classification:** Compromised IAM Credentials
 **Severity:** Critical
 **Status:** Contained
 
 ### Executive Summary
-IAM user dev-alice credentials were compromised. The attacker accessed
+IAM user dev-willy credentials were compromised. The attacker accessed
 secrets, exfiltrated S3 data, and created a backdoor admin user before
 being detected. Total dwell time: 3 minutes 18 seconds.
 
@@ -395,13 +417,13 @@ being detected. Total dwell time: 3 minutes 18 seconds.
 - Backdoor account created: attacker-backdoor (now disabled)
 
 ### Containment Actions Taken
-1. Disabled dev-alice IAM user (14:06:45 UTC)
+1. Disabled dev-willy IAM user (14:06:45 UTC)
 2. Deleted attacker-backdoor user and access keys (14:07:12 UTC)
 3. Rotated all exposed secrets (14:10:00 UTC)
 4. Reviewed all resources for additional persistence mechanisms
 
 ### Root Cause
-dev-alice access key committed to public GitHub repository.
+dev-willy access key committed to public GitHub repository.
 Key was active for 47 days before compromise.
 
 ### Recommendations
@@ -418,7 +440,7 @@ Key was active for 47 days before compromise.
 ```bash
 # Look up events for a specific user
 aws cloudtrail lookup-events \
-  --lookup-attributes AttributeKey=Username,AttributeValue=dev-alice \
+  --lookup-attributes AttributeKey=Username,AttributeValue=dev-willy \
   --start-time 2024-01-15T14:00:00Z \
   --end-time 2024-01-15T15:00:00Z
 
@@ -433,7 +455,7 @@ aws cloudtrail lookup-events \
 # Download and parse log files from S3
 aws s3 sync s3://lab-cloudtrail-logs-yourname/AWSLogs/ ./cloudtrail-logs/
 find ./cloudtrail-logs -name "*.json.gz" -exec gunzip {} \;
-cat ./cloudtrail-logs/**/*.json | jq '.Records[] | select(.userIdentity.userName=="dev-alice")'
+cat ./cloudtrail-logs/**/*.json | jq '.Records[] | select(.userIdentity.userName=="dev-willy")'
 ```
 
 ---
