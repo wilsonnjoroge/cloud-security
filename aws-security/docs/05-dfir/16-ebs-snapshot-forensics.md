@@ -1,15 +1,15 @@
-# 🖥️ EBS Snapshot Forensics — Disk Image Acquisition
+# 🖥️ EBS Snapshot Forensics: Disk Image Acquisition
 
-> **Phase 3 · Document 16 of 29**  
-> **Estimated cost:** ~$2–5 · **Estimated time:** 90 minutes  
+> **Phase 3 · Document 16 of 29**
+> **Estimated cost:** ~$2–5 · **Estimated time:** 90 minutes
 > **Prerequisites:** All Phase 1 and Phase 2 documents complete
 
 ---
 
 ## The Cloud Forensics Mindset
 
-Traditional forensics: pull the hard drive, image it, analyze offline.  
-Cloud forensics: the disk is a virtual EBS volume — you snapshot it, create a new volume, mount it on a forensic instance, analyze without ever touching the live system.
+Traditional forensics: pull the hard drive, image it, analyze offline.
+Cloud forensics: the disk is a virtual EBS volume: you snapshot it, create a new volume, mount it on a forensic instance, analyze without ever touching the live system.
 
 ```
 TRADITIONAL:                    CLOUD:
@@ -32,17 +32,21 @@ Analyze on forensic workstation Attach to forensic EC2 instance
 
 ---
 
-## Step 1 — Simulate a Compromised Instance
+## Step 1: Simulate a Compromised Instance
 
 First, create a "compromised" instance with evidence planted on it.
 
-Launch an EC2 instance (`lab-compromised`) in your VPC. SSH in and plant some evidence:
+Launch an EC2 instance (`lab11-compromised`) in your VPC.
+
+![Launch compromised instance](../screenshots/snapshot-forensics/01-launch-compromised-instance.png)
+
+SSH in and plant some evidence:
 
 ```bash
 # Simulate attacker activity
 sudo su -
 echo "attacker_backdoor" > /tmp/backdoor.sh
-echo "exfil_data_here" > /home/ec2-user/stolen_data.txt
+echo "exfil_data_here" > /home/ubuntu/stolen_data.txt
 history -w /root/.bash_history
 
 # Create a suspicious cron job
@@ -57,29 +61,35 @@ logger -p auth.info "Failed password for root from 198.51.100.42 port 4444 ssh2"
 logger -p auth.info "Accepted password for root from 198.51.100.42 port 4444 ssh2"
 ```
 
-Now **stop the instance** — never take a snapshot of a running instance for forensics (data may be inconsistent).
+![Simulate attack](../screenshots/snapshot-forensics/02-simulate-attack.png)
+
+Now **stop the instance**: never take a snapshot of a running instance for forensics (data may be inconsistent).
 
 ```
-EC2 → Instances → lab-compromised → Instance state → Stop instance
+EC2 → Instances → lab11-compromised → Instance state → Stop instance
 ```
 
 ---
 
-## Step 2 — Acquire: Create an EBS Snapshot
+## Step 2: Acquire - Create an EBS Snapshot
 
 This is your evidence acquisition step. The snapshot is your forensic image.
 
 ```
-EC2 → Instances → lab-compromised → Storage tab
+EC2 → Instances → lab11-compromised → Storage tab
 → Click on the root volume ID → Actions → Create snapshot
 
-  Description: FORENSIC-COPY-lab-compromised-[date]-[time]
+  Description: FORENSIC-COPY-lab11-compromised-[date]-[time]
   Tags:
     Purpose = ForensicEvidence
     CaseID  = IR-2024-001
     Analyst = YourName
     Hash    = (you will add this after verification)
 ```
+
+![Create snapshot - select volume](../screenshots/snapshot-forensics/03-create-snapshot-a.png)
+![Create snapshot - description and tags](../screenshots/snapshot-forensics/03-create-snapshot-b.png)
+![Create snapshot - confirmation](../screenshots/snapshot-forensics/03-create-snapshot-c.png)
 
 Note the snapshot ID: `snap-xxxxxxxxxxxxxxxxx`
 
@@ -95,24 +105,28 @@ aws ec2 describe-snapshots \
 
 Wait for `State: completed` before proceeding.
 
+![Verify snapshot details](../screenshots/snapshot-forensics/04-verify-snapshot-details.png)
+
 ---
 
-## Step 3 — Set Up a Forensic Workstation
+## Step 3: Set Up a Forensic Workstation
 
 Create a clean, isolated EC2 instance that has never been connected to the compromised environment.
 
 ```
 EC2 → Launch instance
 
-  Name:           lab-forensic-workstation
+  Name:           lab1-forensic-workstation
   AMI:            Ubuntu 22.04 LTS
   Instance type:  t3.medium (more RAM for analysis tools)
-  VPC:            lab-vpc
-  Subnet:         lab-public-subnet
+  VPC:            lab1-vpc
+  Subnet:         lab1-public-subnet
   Security group: Create new → sg-forensic
                     Inbound: SSH port 22 from your IP only
                     Outbound: All traffic
 ```
+
+![Launch forensic workstation](../screenshots/snapshot-forensics/05-launch-forensics-instance.png)
 
 ### Install forensic tools
 
@@ -143,9 +157,11 @@ sudo apt install -y \
 pip3 install dfvfs plaso
 ```
 
+![Install forensic tools](../screenshots/snapshot-forensics/06-install-tools.png)
+
 ---
 
-## Step 4 — Create a Volume from the Snapshot
+## Step 4: Create a Volume from the Snapshot
 
 ```
 EC2 → Snapshots → select your forensic snapshot → Actions → Create volume from snapshot
@@ -153,46 +169,54 @@ EC2 → Snapshots → select your forensic snapshot → Actions → Create volum
   Volume type:        gp3
   Size:               same as original
   Availability Zone:  us-east-2a  ← must match forensic workstation's AZ
-  Encryption:         Enable → lab-main-key
+  Encryption:         Enable → lab1-main-key
   Tags:
     Purpose = ForensicEvidence
     CaseID  = IR-2024-001
 ```
 
+![Create volume from snapshot - configuration](../screenshots/snapshot-forensics/07-create-volume-from-compromised-snapshot-a.png)
+![Create volume from snapshot - confirmation](../screenshots/snapshot-forensics/07-create-volume-from-compromised-snapshot-b.png)
+
 Note the new volume ID: `vol-xxxxxxxxxxxxxxxxx`
 
 ---
 
-## Step 5 — Attach the Evidence Volume
+## Step 5: Attach the Evidence Volume
 
 ```
 EC2 → Volumes → select the evidence volume → Actions → Attach volume
-  Instance:    lab-forensic-workstation
+  Instance:    lab1-forensic-workstation
   Device name: /dev/sdf
 ```
 
+![Attach volume to forensic instance - selection](../screenshots/snapshot-forensics/08-attach-volume-to-forensics-instance-a.png)
+![Attach volume to forensic instance - confirmation](../screenshots/snapshot-forensics/08-attach-volume-to-forensics-instance-b.png)
+
 ---
 
-## Step 6 — Mount Read-Only and Verify
+## Step 6: Mount Read-Only and Verify
 
-SSH into the forensic workstation. The attached volume appears as `/dev/xvdf` (AWS renames `/dev/sdf`).
+SSH into the forensic workstation. The attached volume appears as `/dev/nvme1n1` (AWS renames `/dev/sdf`).
 
 ```bash
 # Verify the device is present
 lsblk
 
 # Check the partition table
-sudo fdisk -l /dev/xvdf
+sudo fdisk -l /dev/nvme1n1
 
 # Create a mount point
 sudo mkdir -p /mnt/evidence
 
-# Mount READ-ONLY — critical for evidence preservation
-sudo mount -o ro,noexec,nosuid /dev/xvdf /mnt/evidence
+# Mount READ-ONLY: critical for evidence preservation
+sudo mount -o ro,noload,noexec,nosuid /dev/nvme1n1p1 /mnt/evidence
 
 # Verify mount options (must show ro)
 mount | grep evidence
 ```
+
+![Mount evidence volume as read-only](../screenshots/snapshot-forensics/09-mount-as-read-only.png)
 
 > **Read-only mount is non-negotiable.** Writing to evidence changes it. `ro` flag ensures no accidental modifications. `noexec` prevents accidental execution of malicious binaries. `nosuid` prevents privilege escalation via setuid files.
 
@@ -200,16 +224,16 @@ mount | grep evidence
 
 ```bash
 # Hash the entire raw device before analysis
-sudo md5sum /dev/xvdf > /home/ubuntu/evidence-hash-md5.txt
-sudo sha256sum /dev/xvdf >> /home/ubuntu/evidence-hash-sha256.txt
+sudo md5sum /dev/nvme1n1 > /home/ubuntu/evidence-hash-md5.txt
+sudo sha256sum /dev/nvme1n1 >> /home/ubuntu/evidence-hash-sha256.txt
 
 cat /home/ubuntu/evidence-hash-sha256.txt
-# Record this hash in your case notes — it proves the evidence was not modified
+# Record this hash in your case notes: it proves the evidence was not modified
 ```
 
 ---
 
-## Step 7 — File System Analysis
+## Step 7: File System Analysis
 
 ```bash
 # List all files (including hidden)
@@ -234,19 +258,25 @@ find /mnt/evidence -perm -002 -type f -ls 2>/dev/null
 find /mnt/evidence -name ".*" -ls 2>/dev/null
 ```
 
+![File system analysis - directory listing](../screenshots/snapshot-forensics/10-file-system-analysis-a.png)
+![File system analysis - recently modified files](../screenshots/snapshot-forensics/10-file-system-analysis-b.png)
+![File system analysis - SUID/SGID files](../screenshots/snapshot-forensics/10-file-system-analysis-c.png)
+![File system analysis - world-writable files](../screenshots/snapshot-forensics/10-file-system-analysis-d.png)
+![File system analysis - hidden files](../screenshots/snapshot-forensics/10-file-system-analysis-e.png)
+
 ---
 
-## Step 8 — Log Analysis
+## Step 8: Log Analysis
 
 ```bash
-# Auth log — login activity
+# Auth log: login activity
 cat /mnt/evidence/var/log/auth.log | grep -E "(Accepted|Failed|Invalid)"
 
-# Bash history — command history
+# Bash history: command history
 cat /mnt/evidence/root/.bash_history
-cat /mnt/evidence/home/ec2-user/.bash_history
+cat /mnt/evidence/home/ubuntu/.bash_history
 
-# Cron jobs — persistence mechanisms
+# Cron jobs: persistence mechanisms
 cat /mnt/evidence/etc/crontab
 ls -la /mnt/evidence/etc/cron.*
 cat /mnt/evidence/var/spool/cron/crontabs/* 2>/dev/null
@@ -259,33 +289,38 @@ cat /mnt/evidence/var/log/apache2/access.log 2>/dev/null
 cat /mnt/evidence/var/log/nginx/access.log 2>/dev/null
 ```
 
+![Log analysis - auth log](../screenshots/snapshot-forensics/11-log-analysis-a.png)
+![Log analysis - bash history](../screenshots/snapshot-forensics/11-log-analysis-b.png)
+![Log analysis - cron jobs](../screenshots/snapshot-forensics/11-log-analysis-c.png)
+![Log analysis - system log](../screenshots/snapshot-forensics/11-log-analysis-d.png)
+
 ---
 
-## Step 9 — Artifact Recovery with Sleuth Kit
+## Step 9: Artifact Recovery with Sleuth Kit
 
 ```bash
 # File system information
-sudo fsstat /dev/xvdf
+sudo fsstat /dev/nvme1n1
 
 # List all files including deleted ones
-sudo fls -r -d /dev/xvdf | head -50
+sudo fls -r -d /dev/nvme1n1 | head -50
 
 # Recover a deleted file by inode number
-sudo icat /dev/xvdf <inode-number> > /home/ubuntu/recovered_file
+sudo icat /dev/nvme1n1 <inode-number> > /home/ubuntu/recovered_file
 
 # Timeline of all file system activity
-sudo fls -r -m / /dev/xvdf > /home/ubuntu/bodyfile.txt
+sudo fls -r -m / /dev/nvme1n1 > /home/ubuntu/bodyfile.txt
 sudo mactime -b /home/ubuntu/bodyfile.txt -d > /home/ubuntu/timeline.csv
 
 # View the timeline
 head -50 /home/ubuntu/timeline.csv
 ```
 
-The timeline shows every file creation, modification, and access with timestamps — your forensic timeline of what happened on disk.
+The timeline shows every file creation, modification, and access with timestamps: your forensic timeline of what happened on disk.
 
 ---
 
-## Step 10 — Search for Indicators of Compromise
+## Step 10: Search for Indicators of Compromise
 
 ```bash
 # Search for IP addresses in all files
@@ -307,9 +342,12 @@ find /mnt/evidence -name "authorized_keys" -exec cat {} \;
 find /mnt/evidence/tmp -type f -executable -ls
 ```
 
+![Indicators of compromise - IP and payload search](../screenshots/snapshot-forensics/12-indicators-of-comromise-a.png)
+![Indicators of compromise - backdoor and persistence](../screenshots/snapshot-forensics/12-indicators-of-compromise-b.png)
+
 ---
 
-## Step 11 — YARA Scanning
+## Step 11: YARA Scanning
 
 YARA scans files against malware signatures:
 
@@ -322,9 +360,11 @@ unzip master.zip
 sudo yara -r yara-rules-master/malware/*.yar /mnt/evidence/ 2>/dev/null
 ```
 
+![Scan with YARA](../screenshots/snapshot-forensics/13-scan-with-yara.png)
+
 ---
 
-## Step 12 — Document Findings
+## Step 12: Document Findings
 
 Create a structured forensic report:
 
@@ -358,7 +398,7 @@ cat > /home/ubuntu/forensic-report-IR-2024-001.md << 'EOF'
 - Malicious IP: 198.51.100.42
 - Backdoor file: /tmp/backdoor.sh
 - Persistence: /etc/crontab entry
-- Exfiltrated data: /home/ec2-user/stolen_data.txt
+- Exfiltrated data: /home/ubuntu/stolen_data.txt
 
 ### Evidence Integrity
 - Hash verified before and after analysis: MATCH
@@ -371,6 +411,8 @@ cat > /home/ubuntu/forensic-report-IR-2024-001.md << 'EOF'
 4. Check VPC Flow Logs for other exfiltration
 EOF
 ```
+
+![Document the findings](../screenshots/snapshot-forensics/14-document-the-findings.png)
 
 ---
 
@@ -386,10 +428,10 @@ EOF
 3. Keep the snapshot as long as the case is open (it is evidence)
 
 4. Terminate the forensic workstation when done:
-   EC2 → Instances → lab-forensic-workstation → Terminate
+   EC2 → Instances → lab1-forensic-workstation → Terminate
 
 5. Terminate the compromised instance:
-   EC2 → Instances → lab-compromised → Terminate
+   EC2 → Instances → lab11-compromised → Terminate
 ```
 
 ---

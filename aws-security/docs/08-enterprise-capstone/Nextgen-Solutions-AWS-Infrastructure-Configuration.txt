@@ -1,0 +1,528 @@
+NEXTGEN SOLUTIONS AWS INFRASTRUCTURE CONFIGURATION
+
+Document purpose
+
+This document describes the current AWS infrastructure configuration for
+the Nextgen Solutions three-tier application lab.
+
+The environment is designed to demonstrate:
+
+-   VPC networking
+-   Public and private subnets
+-   Internet Gateway routing
+-   Network ACL controls
+-   Security Group segmentation
+-   Three-tier application architecture
+-   IAM roles attached to EC2 instances
+-   EC2 user-data bootstrapping
+-   SSM/VPC endpoint access
+-   Controlled Web -> App -> Database communication
+
+The current design uses one VPC, two subnets, one Internet Gateway, one
+explicit public route table, one public NACL, four security groups,
+three IAM roles, and three EC2 instances.
+
+1. VPC
+
+Name: Nextgen-Solutions-VPC1
+
+CIDR: 10.2.0.0/16
+
+DNS support: Enabled
+
+DNS hostnames: Enabled
+
+Purpose: The VPC is the main isolated network boundary for the Nextgen
+Solutions application. All three application tiers are deployed inside
+this VPC.
+
+2. SUBNETS
+
+There are two subnets.
+
+2.1 Private subnet
+
+Name: Nextgen-Solutions-private-subnet1
+
+CIDR: 10.2.1.0/24
+
+Purpose: The private subnet is intended to contain the internal
+application and database tiers.
+
+Resources currently placed here: - Nextgen-Solutions-App-Sever1 -
+Nextgen-Solutions-Db-Sever1
+
+2.2 Public subnet
+
+Name: Nextgen-Solutions-public-subnet1
+
+CIDR: 10.2.2.0/24
+
+Purpose: The public subnet contains the Web tier and has a route to the
+Internet Gateway.
+
+Resource currently placed here: - Nextgen-Solutions-Web-Sever1
+
+3. INTERNET GATEWAY
+
+Name: Nextgen-Solutions-IG1
+
+Attachment: Attached to Nextgen-Solutions-VPC1
+
+Purpose: Provides Internet connectivity for resources in the public
+subnet when the subnet route table and security controls permit the
+traffic.
+
+4. PUBLIC ROUTE TABLE
+
+Name: Nextgen-Solutions-public-rt1
+
+Associated subnet: Nextgen-Solutions-public-subnet1
+
+Route: Destination: 0.0.0.0/0 Target: Nextgen-Solutions-IG1
+
+Meaning: Any traffic destined outside the VPC is sent to the Internet
+Gateway.
+
+The public subnet is therefore capable of Internet connectivity, subject
+to Security Group, Network ACL, and instance-level configuration.
+
+5. NETWORK ACL
+
+Name: Nextgen-Solutions-public-NACL1
+
+This NACL is associated with the public subnet.
+
+Inbound rules
+
+HTTP: TCP 80 Source: 0.0.0.0/0
+
+HTTPS: TCP 443 Source: 0.0.0.0/0
+
+SSH: TCP 22 Source: My public IP
+
+Custom TCP / ephemeral range: TCP 1024-65535 Source: 0.0.0.0/0
+
+Outbound rules
+
+HTTP: TCP 80 Destination: 0.0.0.0/0
+
+HTTPS: TCP 443 Destination: 0.0.0.0/0
+
+Custom TCP / ephemeral range: TCP 1024-65535 Destination: 0.0.0.0/0
+
+Important: Network ACLs are stateless. Return traffic must therefore be
+explicitly permitted by the appropriate inbound and outbound rules.
+
+6. SECURITY GROUPS
+
+The architecture uses security groups to enforce communication between
+application tiers.
+
+6.1 Web Server Security Group
+
+Name: Nextgen-Solutions-Web-Sever-SG
+
+Inbound: HTTP TCP 80 Source: 0.0.0.0/0
+
+    HTTPS
+        TCP 443
+        Source: 0.0.0.0/0
+
+    SSH
+        TCP 22
+        Source: My public IP
+
+    SSH from AWS /28 range
+        TCP 22
+        Source: AWS us-east-1 /28 range currently configured in the lab
+
+Outbound: All traffic
+
+Security purpose: The Web tier is the Internet-facing tier. HTTP and
+HTTPS are publicly accessible, while SSH is restricted to the configured
+management sources.
+
+6.2 Application Server Security Group
+
+Name: Nextgen-Solutions-App-Sever-SG
+
+Inbound: Custom TCP Port: 5050 Source: Nextgen-Solutions-Web-Sever-SG
+
+Outbound: All traffic
+
+Security purpose: The application server does not accept application
+traffic directly from the Internet. It accepts TCP/5050 traffic only
+from the Web server security group.
+
+Expected communication:
+
+    Web Server
+        |
+        | TCP 5050
+        v
+    App Server
+
+6.3 Database Server Security Group
+
+Name: Nextgen-Solutions-Db-Sever-SG
+
+Inbound: Custom TCP Port: 3306 Source: Nextgen-Solutions-App-Sever-SG
+
+Outbound: All traffic
+
+Security purpose: The database tier is isolated from the Web tier. Only
+the application server security group can initiate traffic to TCP/3306.
+
+Port 3306 is being used to simulate MySQL database connectivity.
+
+Expected communication:
+
+    App Server
+        |
+        | TCP 3306
+        v
+    DB Server
+
+6.4 VPC Endpoints Security Group
+
+Name: Nextgen-Solutions-VPC-=Endpoints-Sever-SG
+
+Inbound: HTTPS TCP 443 Source: Nextgen-Solutions-App-Sever-SG
+
+    HTTPS
+        TCP 443
+        Source: Nextgen-Solutions-Db-Sever-SG
+
+Outbound: All traffic
+
+Security purpose: This security group controls HTTPS access to the VPC
+interface endpoints from the private application and database servers.
+
+7. IAM ROLES
+
+Three EC2 IAM roles are configured:
+
+    app-server-role
+    web-server-role
+    db-server-role
+
+These roles are attached to the corresponding EC2 instances through
+instance profiles.
+
+The roles are intended to provide AWS permissions to the instances
+without embedding AWS access keys inside the EC2 instances.
+
+8. EC2 INSTANCES
+
+There are three EC2 instances representing the three application tiers.
+
+8.1 Web Server
+
+Name: Nextgen-Solutions-Web-Sever1
+
+VPC: Nextgen-Solutions-VPC1
+
+Subnet: Nextgen-Solutions-public-subnet1
+
+IAM role: web-server-role
+
+Auto-assign public IP: Enabled
+
+Termination protection: Currently enabled
+
+User data:
+
+    #!/bin/bash
+    echo "NEXTGEN-Application Web Tier 1 is Running and reachable" > index.html
+    python3 -m http.server 80 &
+
+Purpose: This is the Internet-facing Web tier.
+
+The Python HTTP server listens on:
+
+    TCP 80
+
+Expected traffic:
+
+    Internet
+        |
+        | HTTP/HTTPS
+        v
+    Web Server
+
+8.2 Application Server
+
+Name: Nextgen-Solutions-App-Sever1
+
+VPC: Nextgen-Solutions-VPC1
+
+Subnet: Nextgen-Solutions-private-subnet1
+
+IAM role: app-server-role
+
+Auto-assign public IP: Disabled
+
+Termination protection: Currently enabled
+
+User data:
+
+    #!/bin/bash
+    echo "NEXTGEN-Application App tier 1 is Running and reachable" > index.html
+    python3 -m http.server 5050 &
+
+Purpose: This is the internal Application tier.
+
+The Python HTTP server listens on:
+
+    TCP 5050
+
+The application server is intended to receive traffic only from the Web
+server security group.
+
+Expected traffic:
+
+    Web Server
+        |
+        | TCP 5050
+        v
+    App Server
+
+8.3 Database Server
+
+Name: Nextgen-Solutions-Db-Sever1
+
+VPC: Nextgen-Solutions-VPC1
+
+Subnet: Nextgen-Solutions-private-subnet1
+
+IAM role: db-server-role
+
+Auto-assign public IP: Disabled
+
+Termination protection: Currently enabled
+
+User data:
+
+    #!/bin/bash
+    echo "NEXTGEN-Application Db tier 1 is Running and reachable" > index.html
+    python3 -m http.server 3306 &
+
+Purpose: This instance represents the Database tier.
+
+TCP 3306 is used to simulate MySQL database connectivity. The Python
+HTTP server is only a lab simulation and is NOT a real MySQL database.
+
+Expected traffic:
+
+    App Server
+        |
+        | TCP 3306
+        v
+    DB Server
+
+9. OVERALL NETWORK ARCHITECTURE
+
+                         INTERNET
+                            |
+                            |
+                    Internet Gateway
+                    Nextgen-Solutions-IG1
+                            |
+                            |
+                 Public Route Table
+                Nextgen-Solutions-public-rt1
+                            |
+                            |
+                 10.2.2.0/24
+             PUBLIC SUBNET
+      Nextgen-Solutions-public-subnet1
+                            |
+                            |
+                     WEB SERVER
+            Nextgen-Solutions-Web-Sever1
+                            |
+                            | TCP 5050
+                            |
+                            v
+                 10.2.1.0/24
+             PRIVATE SUBNET
+      Nextgen-Solutions-private-subnet1
+                            |
+                       APP SERVER
+             Nextgen-Solutions-App-Sever1
+                            |
+                            | TCP 3306
+                            |
+                            v
+                       DB SERVER
+             Nextgen-Solutions-Db-Sever1
+
+10. SECURITY MODEL
+
+The intended security model is a three-tier architecture.
+
+Internet | | 80/443 v Web Tier | | 5050 v Application Tier | | 3306 v
+Database Tier
+
+The important security boundaries are:
+
+1.  The Web server is the only Internet-facing EC2 instance.
+
+2.  The App server does not have a public IP.
+
+3.  The DB server does not have a public IP.
+
+4.  The App server accepts TCP/5050 only from the Web Server security
+    group.
+
+5.  The DB server accepts TCP/3306 only from the App Server security
+    group.
+
+6.  The Web server should not be able to directly access the DB server
+    on TCP/3306.
+
+7.  The App and DB servers are intended to be managed using private
+    access mechanisms such as Systems Manager rather than direct
+    Internet SSH.
+
+8.  EXPECTED COMMUNICATION MATRIX
+
+Source Destination Port Expected
+
+Internet Web Server 80 ALLOWED Internet Web Server 443 ALLOWED My IP Web
+Server 22 ALLOWED Web Server App Server 5050 ALLOWED App Server DB
+Server 3306 ALLOWED Web Server DB Server 3306 BLOCKED Internet App
+Server 5050 BLOCKED Internet DB Server 3306 BLOCKED
+
+12. IMPORTANT CURRENT CONFIGURATION NOTES
+
+1.  The private subnet does not have a public IP assignment for its EC2
+    instances.
+
+2.  Only the public route table has been explicitly listed with a
+    default route to the Internet Gateway.
+
+3.  A private-subnet-specific route table should be verified. If the
+    private subnet is using the VPC main/default route table, document
+    that explicitly or create a dedicated private route table for
+    clearer infrastructure separation.
+
+4.  No NAT Gateway is listed in the current configuration. Therefore the
+    private subnet should not have direct outbound Internet access
+    through a NAT Gateway.
+
+5.  The VPC endpoint design should be verified if private instances are
+    expected to use AWS Systems Manager without Internet/NAT access.
+
+6.  The SSH rule referencing an AWS us-east-1 /28 range should be
+    verified against the exact AWS service/purpose for which it was
+    created. It should not be retained merely because it was present in
+    the original lab.
+
+7.  EC2 termination protection is currently enabled on all three
+    instances. If Terraform is expected to destroy the environment
+    automatically, termination protection must be disabled first.
+
+8.  The user-data scripts should use:
+
+        #!/bin/bash
+
+    rather than:
+
+        #!/bin//bash
+
+    The former is the correct Bash shebang.
+
+9.  TCP/3306 on the DB server is only simulating a MySQL service. The
+    current user-data command starts Python’s HTTP server on port 3306.
+    It is not a real MySQL database.
+
+10. Security Groups are stateful, while Network ACLs are stateless. This
+    distinction should be considered when troubleshooting connectivity.
+
+11. Subnets can be placed in different Availability Zones while
+    remaining in the same VPC. Communication between them is possible
+    when routing, Security Groups, and Network ACLs allow it.
+
+12. TERRAFORM VALIDATION OBJECTIVES
+
+When this infrastructure is recreated with Terraform, the following
+should be verified:
+
+    terraform fmt -check -recursive
+    terraform init
+    terraform validate
+    terraform plan
+    terraform apply
+
+After deployment, verify:
+
+    - VPC CIDR is 10.2.0.0/16
+    - Public subnet is 10.2.2.0/24
+    - Private subnet is 10.2.1.0/24
+    - Public subnet is associated with the public route table
+    - Public route table sends 0.0.0.0/0 to the Internet Gateway
+    - Web instance has a public IP
+    - App instance has no public IP
+    - DB instance has no public IP
+    - Web -> App TCP/5050 works
+    - App -> DB TCP/3306 works
+    - Web -> DB TCP/3306 is blocked
+    - Internet -> App TCP/5050 is blocked
+    - Internet -> DB TCP/3306 is blocked
+    - Required IAM roles are attached
+    - Required VPC endpoints are available
+    - SSM connectivity works for private instances
+
+14. INTENDED FINAL STATE
+
+The intended architecture is a segmented three-tier AWS environment:
+
+    PUBLIC
+    ======
+
+    Internet
+       |
+       v
+    Internet Gateway
+       |
+       v
+    Public Subnet
+       |
+       v
+    Web Server
+    10.2.2.0/24
+
+
+    PRIVATE
+    =======
+
+    Private Subnet
+    10.2.1.0/24
+       |
+       +---- App Server
+       |       TCP 5050
+       |
+       +---- DB Server
+               TCP 3306
+
+Security is enforced through multiple layers:
+
+    VPC segmentation
+        +
+    Route tables
+        +
+    Network ACLs
+        +
+    Security Groups
+        +
+    IAM roles
+        +
+    Private EC2 instances
+        +
+    VPC endpoints / SSM
+
+This design provides a practical demonstration of defense in depth,
+least-privilege network communication, private application tiers, and
+Infrastructure as Code using Terraform.

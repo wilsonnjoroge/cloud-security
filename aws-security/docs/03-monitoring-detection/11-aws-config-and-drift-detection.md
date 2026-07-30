@@ -1,7 +1,7 @@
 # ⚙️ AWS Config: Configuration Tracking & Drift Detection
 
-> **Phase 2 · Document 11 of 29**  
-> **Estimated cost:** ~$2–3/month · **Estimated time:** 45–60 minutes  
+> **Phase 2 · Document 11 of 29**
+> **Estimated cost:** ~$2–3/month · **Estimated time:** 45–60 minutes
 > **Prerequisites:** `04-s3-buckets-and-policies.md`, `06-cloudtrail-setup.md`
 
 ---
@@ -42,6 +42,10 @@ AWS Config records configuration snapshot
 
 **Console path:** `AWS Config → Get started`
 
+![Access AWS Config - search](../screenshots/aws-config/01-access-aws-configs-a.png)
+
+![Access AWS Config - landing page](../screenshots/aws-config/01-access-aws-configs-b.png)
+
 | Field | Value |
 |-------|-------|
 | Record all resources | Yes |
@@ -50,9 +54,13 @@ AWS Config records configuration snapshot
 | SNS topic | Create new → `lab1-config-alerts` |
 | AWS Config role | Create new role |
 
+![Set up AWS Config - recording strategy](../screenshots/aws-config/02-set-aws-configs-a.png)
+
+![Set up AWS Config - IAM role and S3 bucket](../screenshots/aws-config/02-set-aws-configs-iam-and-bucket.png)
+
+![Set up AWS Config - SNS topic](../screenshots/aws-config/02-set-aws-configs-sns-topic.png)
 
 On the rules, select the following:
-
 
 | Rule | What it flags | Why it matters here |
 |---|---|---|
@@ -67,9 +75,11 @@ On the rules, select the following:
 | `vpc-flow-logs-enabled` | Flow logs turned off on a VPC | Confirms the network evidence trail from doc 10 stays enforced going forward |
 | `ec2-instance-no-public-ip` | EC2 instances with a public IP, scoped to ones that shouldn't have one | Relevant specifically for private-tier instances (e.g. the app server), which should never have a public IP |
 
+![Set up AWS Config - rules to be watched](../screenshots/aws-config/02-set-aws-configs-rules-to-be-watched.png)
 
 Click **Confirm**.
 
+![Rules compliance results after setup](../screenshots/aws-config/02-set-aws-configs-rules-to-be-watched-b.png)
 
 ---
 
@@ -85,6 +95,8 @@ Browse the resources Config has discovered:
 - VPCs and subnets
 - S3 buckets
 - IAM users, roles, and policies
+
+![Explore resources inventory / dashboard](../screenshots/aws-config/03-explore-resources-inventory.png)
 
 Click on any resource to see its **configuration timeline**: a history of every change ever made to it.
 
@@ -122,6 +134,10 @@ Example: flag any EC2 instance not tagged with `Environment`:
 
 **Console path:** `Lambda → Create function`
 
+![Lambda landing page - create a function](../screenshots/aws-config/04-create-lambda-custom-rule-a.png)
+
+![Create function - basic information](../screenshots/aws-config/2026-07-14_21-42.png)
+
 ```python
 import boto3
 import json
@@ -151,6 +167,10 @@ def lambda_handler(event, context):
     )
 ```
 
+> **Before wiring this up in Config:** the default Lambda execution role only has permission to write to CloudWatch Logs — it does **not** include `config:PutEvaluations`, which this function calls directly. Attach the AWS-managed `AWSConfigRulesExecutionRole` policy to the function's execution role (`IAM → Roles → CheckEnvironmentTag-role-xxxx → Add permissions → Attach policy`), or the function will fail with an AccessDenied error the first time Config invokes it.
+
+![Function created - code pasted and deployed](../screenshots/aws-config/04-create-lambda-custom-rule-b.png)
+
 Then in AWS Config:
 
 ```
@@ -159,6 +179,10 @@ Rules → Add rule → Create custom Lambda rule
   Lambda ARN: arn:aws:lambda:us-east-2:ACCOUNT:function:CheckEnvironmentTag
   Trigger:    Configuration changes → EC2 instance
 ```
+
+![Create custom rule - review and create](../screenshots/aws-config/03-create-custom-rule-2.png)
+
+![Custom rule added confirmation](../screenshots/aws-config/03-create-custom-rule-3.png)
 
 ---
 
@@ -170,6 +194,8 @@ Conformance packs bundle multiple Config rules into a single deployable package.
 AWS Config → Conformance packs → Deploy conformance pack
 ```
 
+![Deploy conformance pack - empty state](../screenshots/aws-config/05-deploy-conformance-packs-a.png)
+
 Useful packs:
 
 | Pack name | Framework |
@@ -178,6 +204,8 @@ Useful packs:
 | `NIST-800-53-rev5` | NIST 800-53 Rev 5 |
 | `PCI-DSS` | Payment Card Industry DSS |
 | `CIS-AWS-Foundations-Benchmark` | CIS AWS Foundations |
+
+![Conformance packs deployed](../screenshots/aws-config/05-deploy-conformance-packs-b.png)
 
 > For your cybersecurity career, familiarity with CIS Benchmarks and NIST 800-53 is essential. Config makes compliance measurable and continuous rather than a point-in-time audit.
 
