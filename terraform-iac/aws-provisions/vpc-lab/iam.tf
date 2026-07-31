@@ -28,8 +28,8 @@ resource "aws_iam_policy" "lab2_s3_readonly" {
           "s3:ListBucket"
         ]
         Resource = [
-            aws_s3_bucket.lab2.arn,
-            "${aws_s3_bucket.lab2.arn}/*"
+          aws_s3_bucket.lab2.arn,
+          "${aws_s3_bucket.lab2.arn}/*"
         ]
       }
     ]

@@ -49,13 +49,13 @@ resource "aws_instance" "web" {
   disable_api_termination     = false
 
   metadata_options {
-  http_endpoint = "enabled"
-  http_tokens   = "required"
+    http_endpoint = "enabled"
+    http_tokens   = "required"
   }
 
   root_block_device {
-  encrypted   = true
-  volume_type = "gp3"
+    encrypted   = true
+    volume_type = "gp3"
   }
 
   user_data = <<-EOF
@@ -83,13 +83,13 @@ resource "aws_instance" "app" {
   disable_api_termination     = false
 
   metadata_options {
-  http_endpoint = "enabled"
-  http_tokens   = "required"
+    http_endpoint = "enabled"
+    http_tokens   = "required"
   }
 
   root_block_device {
-  encrypted   = true
-  volume_type = "gp3"
+    encrypted   = true
+    volume_type = "gp3"
   }
 
   user_data = <<-EOF
@@ -117,13 +117,13 @@ resource "aws_instance" "db" {
   disable_api_termination     = false
 
   metadata_options {
-  http_endpoint = "enabled"
-  http_tokens   = "required"
+    http_endpoint = "enabled"
+    http_tokens   = "required"
   }
 
   root_block_device {
-  encrypted   = true
-  volume_type = "gp3"
+    encrypted   = true
+    volume_type = "gp3"
   }
 
 
