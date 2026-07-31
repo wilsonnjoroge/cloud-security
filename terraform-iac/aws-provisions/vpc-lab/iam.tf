@@ -99,3 +99,55 @@ resource "aws_iam_instance_profile" "db_server" {
   name = "lab2-db-server-role"
   role = aws_iam_role.db_server.name
 }
+
+
+# ---------------------------------------------------------------------------
+# VPC Flow Logs IAM role
+# ---------------------------------------------------------------------------
+
+resource "aws_iam_role" "flowlogs" {
+  name = "${var.project_name}-flowlogs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+
+resource "aws_iam_role_policy" "flowlogs" {
+  name = "${var.project_name}-flowlogs-policy"
+
+  role = aws_iam_role.flowlogs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+
+        Resource = "*"
+      }
+    ]
+  })
+}

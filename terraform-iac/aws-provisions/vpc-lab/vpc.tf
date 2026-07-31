@@ -95,3 +95,9 @@ resource "aws_flow_log" "vpc" {
   log_destination      = aws_cloudwatch_log_group.flowlogs.arn
   iam_role_arn         = aws_iam_role.flowlogs.arn
 }
+
+
+resource "aws_cloudwatch_log_group" "flowlogs" {
+  name              = "/aws/vpc/${var.project_name}/flowlogs"
+  retention_in_days = 30
+}
