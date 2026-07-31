@@ -146,7 +146,7 @@ resource "aws_iam_role_policy" "flowlogs" {
           "logs:DescribeLogStreams"
         ]
 
-        Resource = "*"
+        Resource = "aws_cloudwatch_log_group.flowlogs.arn"
       }
     ]
   })
