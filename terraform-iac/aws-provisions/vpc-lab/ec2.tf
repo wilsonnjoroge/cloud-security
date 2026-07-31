@@ -48,8 +48,18 @@ resource "aws_instance" "web" {
   associate_public_ip_address = true
   disable_api_termination     = false
 
+  metadata_options {
+  http_endpoint = "enabled"
+  http_tokens   = "required"
+  }
+
+  root_block_device {
+  encrypted   = true
+  volume_type = "gp3"
+  }
+
   user_data = <<-EOF
-    #!/bin//bash
+    #!/bin/bash
     echo "lab2-Application Web Tier 1 is Running and reachable" > index.html
     python3 -m http.server 80 &
   EOF
@@ -72,8 +82,18 @@ resource "aws_instance" "app" {
   associate_public_ip_address = false
   disable_api_termination     = false
 
+  metadata_options {
+  http_endpoint = "enabled"
+  http_tokens   = "required"
+  }
+
+  root_block_device {
+  encrypted   = true
+  volume_type = "gp3"
+  }
+
   user_data = <<-EOF
-    #!/bin//bash
+    #!/bin/bash
     echo "lab2-Application App tier 1 is Running and reachable" > index.html
     python3 -m http.server 5050 &
   EOF
@@ -96,8 +116,19 @@ resource "aws_instance" "db" {
   associate_public_ip_address = false
   disable_api_termination     = false
 
+  metadata_options {
+  http_endpoint = "enabled"
+  http_tokens   = "required"
+  }
+
+  root_block_device {
+  encrypted   = true
+  volume_type = "gp3"
+  }
+
+
   user_data = <<-EOF
-    #!/bin//bash
+    #!/bin/bash
     echo "lab2-Application Db tier 1 is Running and reachable" > index.html
     python3 -m http.server 3306 &
   EOF

@@ -87,3 +87,11 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private.id
   route_table_id = aws_route_table.private.id
 }
+
+resource "aws_flow_log" "vpc" {
+  vpc_id               = aws_vpc.this.id
+  traffic_type         = "ALL"
+  log_destination_type = "cloud-watch-logs"
+  log_destination      = aws_cloudwatch_log_group.flowlogs.arn
+  iam_role_arn         = aws_iam_role.flowlogs.arn
+}
