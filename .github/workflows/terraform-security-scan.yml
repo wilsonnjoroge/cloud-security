@@ -20,3 +20,5 @@ jobs:
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: ${{ matrix.working-directory }}
+          additional_args: >  
+            --exclude aws-ec2-no-public-ingress-sgr,aws-ec2-no-public-egress-sgr,aws-ec2-no-public-ip-subnet

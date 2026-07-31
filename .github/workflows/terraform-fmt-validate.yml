@@ -2,8 +2,13 @@ name: Terraform Format & Validate
 
 on:
   pull_request:
-    paths:
-      - 'terraform-iac/aws-provisions/**/*.tf'
+    # No paths filter here on purpose. If this workflow only ran on .tf
+    # changes, marking it "required" in branch protection would leave any
+    # non-Terraform PR (docs, other workflows, README) permanently stuck at
+    # "pending" -- a required check has to actually report a result on
+    # every PR, or it blocks merges it was never meant to gate. So this
+    # workflow always runs, and decides internally whether there's
+    # anything Terraform-related to check.
 
 jobs:
   fmt-validate:
@@ -12,21 +17,42 @@ jobs:
       matrix:
         working-directory:
           - terraform-iac/aws-provisions/vpc-lab
-    defaults:
-      run:
-        working-directory: ${{ matrix.working-directory }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history, needed to diff against the base branch
+
+      - name: Check for .tf changes in this project
+        id: tf-changes
+        run: |
+          BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
+          DIR="${{ matrix.working-directory }}"
+          if git diff --name-only "$BASE_REF"...HEAD -- "$DIR" | grep -q '\.tf$'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Terraform
+        if: steps.tf-changes.outputs.changed == 'true'
         uses: hashicorp/setup-terraform@v3
 
       - name: Check formatting
+        if: steps.tf-changes.outputs.changed == 'true'
+        working-directory: ${{ matrix.working-directory }}
         run: terraform fmt -check -recursive
 
       - name: Init (no backend, just to download providers)
+        if: steps.tf-changes.outputs.changed == 'true'
+        working-directory: ${{ matrix.working-directory }}
         run: terraform init -backend=false
 
       - name: Validate
+        if: steps.tf-changes.outputs.changed == 'true'
+        working-directory: ${{ matrix.working-directory }}
         run: terraform validate
+
+      - name: No Terraform changes -- nothing to check
+        if: steps.tf-changes.outputs.changed == 'false'
+        run: echo "No .tf changes in ${{ matrix.working-directory }} -- skipping checks, reporting success."
