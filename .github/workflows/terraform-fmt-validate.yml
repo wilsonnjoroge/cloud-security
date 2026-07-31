@@ -1,0 +1,32 @@
+name: Terraform Format & Validate
+
+on:
+  pull_request:
+    paths:
+      - 'terraform-iac/aws-provisions/**/*.tf'
+
+jobs:
+  fmt-validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        working-directory:
+          - terraform-iac/aws-provisions/vpc-lab
+    defaults:
+      run:
+        working-directory: ${{ matrix.working-directory }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+
+      - name: Init (no backend, just to download providers)
+        run: terraform init -backend=false
+
+      - name: Validate
+        run: terraform validate
