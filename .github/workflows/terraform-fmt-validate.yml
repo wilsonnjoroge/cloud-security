@@ -2,13 +2,7 @@ name: Terraform Format & Validate
 
 on:
   pull_request:
-    # No paths filter here on purpose. If this workflow only ran on .tf
-    # changes, marking it "required" in branch protection would leave any
-    # non-Terraform PR (docs, other workflows, README) permanently stuck at
-    # "pending" -- a required check has to actually report a result on
-    # every PR, or it blocks merges it was never meant to gate. So this
-    # workflow always runs, and decides internally whether there's
-    # anything Terraform-related to check.
+    #Files paths included in he condition below to exclude non .tf files
 
 jobs:
   fmt-validate:

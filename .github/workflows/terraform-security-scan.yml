@@ -2,8 +2,19 @@ name: Terraform Security Scan
 
 on:
   pull_request:
-    paths:
-      - 'terraform-iac/aws-provisions/**/*.tf'
+    # No paths filter here on purpose -- same reasoning as fmt-validate.yml.
+    # If this only triggered on .tf changes, marking it "required" would
+    # leave any non-Terraform PR (docs, other workflows, README) stuck at
+    # "pending" forever, since it would never get a chance to report a
+    # result. So this always runs, and decides internally whether there's
+    # anything Terraform-related to scan.
+    #
+    # What this used to look like, for reference (the version that only
+    # fires on .tf changes -- fine as long as this check is NOT marked
+    # required in branch protection):
+    #
+    # paths:
+    #   - 'terraform-iac/aws-provisions/**/*.tf'
 
 jobs:
   tfsec:
@@ -15,10 +26,32 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history, needed to diff against the base branch
+
+      - name: Check for .tf changes in this project
+        id: tf-changes
+        run: |
+          BASE_REF="origin/${{ github.event.pull_request.base.ref }}"
+          DIR="${{ matrix.working-directory }}"
+          if git diff --name-only "$BASE_REF"...HEAD -- "$DIR" | grep -q '\.tf$'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Run tfsec
+        if: steps.tf-changes.outputs.changed == 'true'
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: ${{ matrix.working-directory }}
-          additional_args: >  
+          # Excluded: these three findings are the intentional design of
+          # this lab (public web tier needs 80/443 inbound; the public
+          # subnet is meant to hand out public IPs). Everything else stays
+          # enforced. See vpc-lab/README.md for the architecture rationale.
+          additional_args: >
             --exclude aws-ec2-no-public-ingress-sgr,aws-ec2-no-public-egress-sgr,aws-ec2-no-public-ip-subnet
+
+      - name: No Terraform changes -- nothing to scan
+        if: steps.tf-changes.outputs.changed == 'false'
+        run: echo "No .tf changes in ${{ matrix.working-directory }} -- skipping scan, reporting success."
