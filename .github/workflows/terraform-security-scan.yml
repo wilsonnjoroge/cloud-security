@@ -1,0 +1,22 @@
+name: Terraform Security Scan
+
+on:
+  pull_request:
+    paths:
+      - 'terraform-iac/aws-provisions/**/*.tf'
+
+jobs:
+  tfsec:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        working-directory:
+          - terraform-iac/aws-provisions/vpc-lab
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: ${{ matrix.working-directory }}
