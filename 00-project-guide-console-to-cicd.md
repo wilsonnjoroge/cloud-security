@@ -451,49 +451,7 @@ object to S3: it only reads. The state object only appears after a real
 
 ### `terraform-apply.yml`: the actual design used
 
-**Deliberately simpler than an early draft that considered passing a
-saved `-out=tfplan` artifact between a separate `plan` job and a separate
-`apply` job.** That pattern adds real value at scale (guarantees the
-exact reviewed diff is what gets applied) but requires artifact
-upload/download across jobs and a clear rule for "which of several open
-PRs' plans applies." For this project, `apply` instead **always
-re-plans immediately before applying, against current real state on
-`main`**: sidestepping the "which plan" ambiguity entirely, since there
-is only ever one, freshly computed, immediately consumed plan per run.
 
-```yaml
-on:
-  workflow_dispatch:
-    inputs:
-      project:
-        type: choice
-        options: [vpc-lab]
-      target_environment:
-        type: choice
-        options: [production]
-
-permissions:
-  id-token: write
-  contents: read
-
-jobs:
-  apply:
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.target_environment }}   # approval gate lives here
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::<account-id>:role/github-actions-terraform-apply
-          aws-region: us-east-1
-      - uses: hashicorp/setup-terraform@v3
-      - run: terraform init -input=false
-      - run: terraform plan -no-color -input=false -out=tfplan
-        env:
-          TF_VAR_my_ip_cidr: ${{ secrets.TF_VAR_MY_IP_CIDR }}
-      - run: terraform show -no-color tfplan   # printed to the job log for review
-      - run: terraform apply -input=false -auto-approve tfplan
-```
 
 - **`workflow_dispatch` only**: never triggered by a merge or a push.
   Nothing in AWS changes unless this is deliberately clicked and run.
@@ -519,6 +477,70 @@ not an environment-level one: it doesn't need to differ per environment
 to). Environment-level secrets exist for values that genuinely *should*
 differ per environment (e.g. a different AWS role ARN if `dev` and `prod`
 were ever separate AWS accounts): not needed here yet.
+
+### The repeatable pattern for every future project
+ 
+Every new Terraform project (doc 02's IAM lab, doc 03's EC2 lab, and so
+on) needs this same sequence. Missing a step here is exactly what caused
+a real outage during vpc-lab's first CI apply run — a resource-write
+policy was created but never actually attached to the apply role, which
+only surfaced as a confusing `ec2:DescribeImages` access-denied error deep
+into a live `apply`, well after OIDC auth and backend access had already
+succeeded. The fix is following this sequence deliberately, every time,
+rather than assembling roles/policies ad hoc.
+ 
+```
+1. Write the .tf files for the project
+   (defines exactly what AWS resources this project touches)
+          │
+          ▼
+2. Two OIDC roles already exist and are REUSED, not recreated, per
+   project — only their attached policies change:
+   ┌────────────────────────────┐   ┌─────────────────────────────┐
+   │ github-actions-terraform-  │   │ github-actions-terraform-    │
+   │ plan                       │   │ apply                        │
+   │ trust: sub = pull_request  │   │ trust: sub = environment:<n> │
+   └────────────────────────────┘   └─────────────────────────────┘
+          │                                    │
+          ▼                                    ▼
+3. Write a resource policy SCOPED to what step 1 actually creates
+   (e.g. this project's ec2:*, iam:*, kms:* -- only the services and
+   actions its .tf files touch, nothing added "just in case")
+          │
+          ├─→ read-only version (Describe*/Get*/List*) → attach to PLAN role
+          └─→ write version (Create*/Delete*/Put*/etc.) → attach to APPLY role
+          │
+          ▼
+4. Attach TerraformBackendAccess to BOTH roles
+   (the ONE constant policy across every project -- it never changes
+   per project, because every project reads/writes state through the
+   exact same S3 bucket, just a different `key` path per project)
+          │
+          ▼
+5. Confirm attachment, don't assume it
+   IAM → Roles → <role> → Permissions tab → should show exactly:
+     - this project's read-only or write policy
+     - TerraformBackendAccess
+   (this is the step that silently failed for vpc-lab's apply role --
+   verify the list on screen, don't trust that a "Create policy" click
+   earlier in the session means it's actually attached now)
+          │
+          ▼
+6. Test plan (PR, via terraform-plan.yml) before ever testing apply
+   -- plan only needs the read-only + backend policies, so it's a
+   strictly smaller blast radius if something's still misconfigured
+```
+ 
+**The one constant, stated plainly:** `TerraformBackendAccess` (S3
+state read/write + locking) is the *only* policy that's genuinely the
+same across every project, since state storage is shared, centralized
+infrastructure. Every other policy — resource read, resource write — is
+project-specific and should be rebuilt fresh, scoped to that project's
+actual `.tf` files, not copied wholesale from an earlier project's policy
+just because it "worked before" (see the earlier note on why a
+network-heavy `ec2:*` policy would be inappropriately broad for, say, an
+S3-focused project).
+
 
 ---
 
