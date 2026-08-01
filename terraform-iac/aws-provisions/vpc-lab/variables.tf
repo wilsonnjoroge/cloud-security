@@ -41,6 +41,7 @@ variable "my_ip_cidr" {
     Find yours with: curl -s https://checkip.amazonaws.com
   EOT
   type        = string
+  sensitive   = true
   # No default on purpose -- you must supply the public IP.
 }
 
