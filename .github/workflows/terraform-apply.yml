@@ -1,0 +1,78 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Which project to apply'
+        required: true
+        type: choice
+        options:
+          - vpc-lab
+      target_environment:
+        description: 'Which environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - uat
+          - preprod
+          - prod
+
+permissions:
+  id-token: write   # required to request a GitHub OIDC token
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    # This is the manual-approval gate: GitHub Environments can require a
+    # designated reviewer to approve before a job targeting this
+    # environment is allowed to run, even after workflow_dispatch has
+    # already been triggered. Configure this under
+    # Settings -> Environments -> production -> Required reviewers.
+    environment: ${{ inputs.target_environment }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Map project input to working directory
+        id: project-dir
+        run: |
+          case "${{ inputs.project }}" in
+            vpc-lab)
+              echo "dir=terraform-iac/aws-provisions/vpc-lab" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown project: ${{ inputs.project }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::025066283316:role/github-actions-terraform-apply
+          aws-region: us-east-1
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ steps.project-dir.outputs.dir }}
+        run: terraform init -input=false
+
+      - name: Terraform Plan (fresh, against current real state)
+        id: plan
+        working-directory: ${{ steps.project-dir.outputs.dir }}
+        run: terraform plan -no-color -input=false -out=tfplan
+        env:
+          TF_VAR_my_ip_cidr: ${{ secrets.TF_VAR_MY_IP_CIDR }}
+
+      - name: Show plan summary in job log
+        working-directory: ${{ steps.project-dir.outputs.dir }}
+        run: terraform show -no-color tfplan
+
+      - name: Terraform Apply
+        working-directory: ${{ steps.project-dir.outputs.dir }}
+        run: terraform apply -input=false -auto-approve tfplan
