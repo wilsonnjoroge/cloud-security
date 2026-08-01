@@ -51,14 +51,21 @@ jobs:
       - name: Terraform Init
         if: steps.tf-changes.outputs.changed == 'true'
         working-directory: ${{ matrix.working-directory }}
-        run: terraform init
+        run: terraform init -input=false
 
       - name: Terraform Plan
         if: steps.tf-changes.outputs.changed == 'true'
         id: plan
         working-directory: ${{ matrix.working-directory }}
-        run: terraform plan -no-color
+        run: terraform plan -no-color -input=false
         continue-on-error: true
+        env:
+          # -input=false above means: never prompt interactively, fail
+          # fast instead if a required variable is missing. Any variable
+          # with no default in variables.tf (e.g. my_ip_cidr) has to be
+          # supplied here explicitly -- CI has no terminal to type an
+          # answer into, unlike a local `terraform plan` run.
+          TF_VAR_my_ip_cidr: ${{ secrets.TF_VAR_MY_IP_CIDR }}
 
       - name: Comment plan output on PR
         if: steps.tf-changes.outputs.changed == 'true'
