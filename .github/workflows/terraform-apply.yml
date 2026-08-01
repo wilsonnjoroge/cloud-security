@@ -76,3 +76,19 @@ jobs:
       - name: Terraform Apply
         working-directory: ${{ steps.project-dir.outputs.dir }}
         run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Upload private key as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssh-key
+          path: ${{ steps.project-dir.outputs.dir }}/lab2-key.pem
+          retention-days: 1
+          
+          # Short retention deliberately: this key is only ever needed
+          # right after this specific apply run. GitHub artifacts are not
+          # a real secrets store -- anyone with read access to this repo's
+          # Actions runs can download it during the 1-day window. For
+          # anything beyond quick manual access, push it to AWS Secrets
+          # Manager instead of relying on artifact retention.
+ 
+
