@@ -36,7 +36,7 @@ resource "local_sensitive_file" "pem" {
 }
 
 # ---------------------------------------------------------------------------
-# Web tier -- public subnet, public IP, HTTP server on port 80
+# Web tier -- public subnet, public IP, HTTP server on port 80 only
 # ---------------------------------------------------------------------------
 resource "aws_instance" "web" {
   ami                         = data.aws_ami.al2023.id
@@ -60,7 +60,7 @@ resource "aws_instance" "web" {
 
   user_data = <<-EOF
     #!/bin/bash
-    echo "lab2-Application Web Tier 1 is Running and reachable" > index.html
+    echo "lab2-Application Web Tier is Running and reachable on all Ports" > index.html
     python3 -m http.server 80 &
   EOF
 
@@ -94,7 +94,7 @@ resource "aws_instance" "app" {
 
   user_data = <<-EOF
     #!/bin/bash
-    echo "lab2-Application App tier 1 is Running and reachable" > index.html
+    echo "lab2-Application App tier 1 is Running and reachable on port 5050 Only" > index.html
     python3 -m http.server 5050 &
   EOF
 
