@@ -7,6 +7,7 @@
 .terraform/
 crash.log
 crash.*.log
+*plan
 
 # Generated SSH keys
 *.pem
