@@ -24,14 +24,18 @@ permissions:
   contents: read
 
 jobs:
-  apply:
+  # ---------------------------------------------------------------------
+  # Job 1: runs immediately, unattended, no approval gate. Its only job
+  # is to compute a fresh, real plan and show its cost, so a reviewer
+  # has something real to look at BEFORE approving job 2. A job that
+  # carries `environment:` pauses before its first step runs at all --
+  # approving that blind (nothing computed yet) defeats the point of a
+  # review gate. This job exists specifically so that isn't the case.
+  # ---------------------------------------------------------------------
+  plan-and-estimate:
     runs-on: ubuntu-latest
-    # This is the manual-approval gate: GitHub Environments can require a
-    # designated reviewer to approve before a job targeting this
-    # environment is allowed to run, even after workflow_dispatch has
-    # already been triggered. Configure this under
-    # Settings -> Environments -> production -> Required reviewers.
-    environment: ${{ inputs.target_environment }}
+    outputs:
+      project-dir: ${{ steps.project-dir.outputs.dir }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -73,22 +77,71 @@ jobs:
         working-directory: ${{ steps.project-dir.outputs.dir }}
         run: terraform show -no-color tfplan
 
-      - name: Terraform Apply
+      - name: Cost estimate
+        if: steps.plan.outcome == 'success'
         working-directory: ${{ steps.project-dir.outputs.dir }}
+        run: |
+          if command -v infracost >/dev/null 2>&1; then
+            infracost breakdown --path=tfplan
+          else
+            echo "Infracost not installed on this runner -- skipping cost estimate."
+            echo "To enable: add setup-infracost action + INFRACOST_API_KEY secret."
+          fi
+
+      - name: Upload plan as artifact for the apply job to consume
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ inputs.target_environment }}
+          path: ${{ steps.project-dir.outputs.dir }}/tfplan
+          retention-days: 1
+
+  # ---------------------------------------------------------------------
+  # Job 2: this is the one gated by GitHub Environment protection rules
+  # (required reviewers). By the time a reviewer is asked to approve,
+  # job 1's log already shows the real plan and its cost -- approval is
+  # informed, not blind. This job never recomputes the plan; it applies
+  # exactly the artifact job 1 already produced.
+  # ---------------------------------------------------------------------
+  apply:
+    needs: plan-and-estimate
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Download plan artifact from plan-and-estimate
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ inputs.target_environment }}
+          path: ${{ needs.plan-and-estimate.outputs.project-dir }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::025066283316:role/github-actions-terraform-apply
+          aws-region: us-east-1
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ needs.plan-and-estimate.outputs.project-dir }}
+        run: terraform init -input=false
+
+      - name: Terraform Apply (applies the exact plan from job 1, nothing recomputed)
+        working-directory: ${{ needs.plan-and-estimate.outputs.project-dir }}
         run: terraform apply -input=false -auto-approve tfplan
 
       - name: Upload private key as artifact
         uses: actions/upload-artifact@v4
         with:
           name: ssh-key
-          path: ${{ steps.project-dir.outputs.dir }}/lab2-key.pem
+          path: ${{ needs.plan-and-estimate.outputs.project-dir }}/lab2-key.pem
           retention-days: 1
-          
           # Short retention deliberately: this key is only ever needed
           # right after this specific apply run. GitHub artifacts are not
           # a real secrets store -- anyone with read access to this repo's
           # Actions runs can download it during the 1-day window. For
           # anything beyond quick manual access, push it to AWS Secrets
           # Manager instead of relying on artifact retention.
- 
-
