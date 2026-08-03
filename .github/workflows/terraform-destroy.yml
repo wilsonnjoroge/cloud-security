@@ -1,0 +1,128 @@
+name: Terraform Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Which project to destroy'
+        required: true
+        type: choice
+        options:
+          - vpc-lab
+      target_environment:
+        description: 'Which environment to destroy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - uat
+          - preprod
+          - prod
+      confirm:
+        description: 'Type "destroy" exactly to confirm -- this is destructive and cannot be undone'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------
+  # Job 1: validates the typed confirmation, then computes an unattended
+  # destroy plan so a reviewer can see exactly what would be deleted
+  # before approving job 2. Same reasoning as terraform-apply.yml's
+  # plan-and-estimate job -- a reviewer should never approve blind.
+  # ---------------------------------------------------------------------
+  plan-destroy:
+    runs-on: ubuntu-latest
+    outputs:
+      project-dir: ${{ steps.project-dir.outputs.dir }}
+    steps:
+      - name: Validate typed confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "destroy" ]; then
+            echo "Confirmation text did not match 'destroy' exactly. Aborting."
+            exit 1
+          fi
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Map project input to working directory
+        id: project-dir
+        run: |
+          case "${{ inputs.project }}" in
+            vpc-lab)
+              echo "dir=terraform-iac/aws-provisions/vpc-lab" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown project: ${{ inputs.project }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::025066283316:role/github-actions-terraform-apply
+          aws-region: us-east-1
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ steps.project-dir.outputs.dir }}
+        run: terraform init -input=false
+
+      - name: Terraform Plan (destroy)
+        working-directory: ${{ steps.project-dir.outputs.dir }}
+        run: terraform plan -destroy -no-color -input=false -out=tfplan-destroy
+        env:
+          TF_VAR_my_ip_cidr: ${{ secrets.TF_VAR_MY_IP_CIDR }}
+
+      - name: Show what would be destroyed, in the job log
+        working-directory: ${{ steps.project-dir.outputs.dir }}
+        run: terraform show -no-color tfplan-destroy
+
+      - name: Upload destroy plan as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-destroy-${{ inputs.target_environment }}
+          path: ${{ steps.project-dir.outputs.dir }}/tfplan-destroy
+          retention-days: 1
+
+  # ---------------------------------------------------------------------
+  # Job 2: gated by the same GitHub Environment protection rules as
+  # apply. Executes exactly the destroy plan job 1 already showed.
+  # ---------------------------------------------------------------------
+  destroy:
+    needs: plan-destroy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Download destroy plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-destroy-${{ inputs.target_environment }}
+          path: ${{ needs.plan-destroy.outputs.project-dir }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::025066283316:role/github-actions-terraform-apply
+          aws-region: us-east-1
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ needs.plan-destroy.outputs.project-dir }}
+        run: terraform init -input=false
+
+      - name: Terraform Apply (executes the destroy plan from job 1)
+        working-directory: ${{ needs.plan-destroy.outputs.project-dir }}
+        run: terraform apply -input=false -auto-approve tfplan-destroy
