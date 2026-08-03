@@ -77,16 +77,16 @@ jobs:
         working-directory: ${{ steps.project-dir.outputs.dir }}
         run: terraform show -no-color tfplan
 
+      - name: Set up Infracost
+        uses: infracost/actions/setup@v3
+
       - name: Cost estimate
         if: steps.plan.outcome == 'success'
         working-directory: ${{ steps.project-dir.outputs.dir }}
+        env:
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
         run: |
-          if command -v infracost >/dev/null 2>&1; then
-            infracost breakdown --path=tfplan
-          else
-            echo "Infracost not installed on this runner -- skipping cost estimate."
-            echo "To enable: add setup-infracost action + INFRACOST_API_KEY secret."
-          fi
+          infracost breakdown --path=tfplan --format=table
 
       - name: Upload plan as artifact for the apply job to consume
         uses: actions/upload-artifact@v4
