@@ -67,7 +67,7 @@ resource "aws_instance" "web" {
   tags = {
     Name = "${var.project_name}-Web-Server1"
   }
-}
+} 
 
 # ---------------------------------------------------------------------------
 # App tier -- private subnet, no public IP, custom app server on port 5050
