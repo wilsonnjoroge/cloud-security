@@ -19,7 +19,7 @@ on:
           - preprod
           - prod
       confirm:
-        description: 'Type "destroy" exactly to confirm -- this is destructive and cannot be undone'
+        description: 'Type "destroy" to confirm. NB/: This is destructive and cannot be undone'
         required: true
         type: string
 
@@ -65,7 +65,7 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::025066283316:role/github-actions-terraform-apply
+          role-to-assume: arn:aws:iam::025066283316:role/github-actions-terraform-plan-workflow
           aws-region: us-east-1
 
       - name: Set up Terraform
