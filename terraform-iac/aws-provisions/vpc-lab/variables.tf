@@ -48,7 +48,7 @@ variable "my_ip_cidr" {
 variable "instance_type" {
   description = "EC2 instance type, used for all three tiers"
   type        = string
-  default     = "t3.small"
+  default     = "t3.micro"
 }
 
 variable "project_name" {
