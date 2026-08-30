@@ -11,3 +11,9 @@ crash.*.log
 
 # Generated SSH keys
 *.pem
+
+# TXT files
+*.txt
+.env
+.env.*
+!.env.example

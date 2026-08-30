@@ -1,4 +1,4 @@
-# 🚨 Compromised IAM — Incident Response Playbook
+# 🚨 Compromised IAM: Incident Response Playbook
 
 > **Phase 3 · Document 19 of 29**  
 > **Estimated cost:** Free · **Estimated time:** 60 minutes  
@@ -8,7 +8,7 @@
 
 ## Why IAM Compromise Is the Most Critical Cloud Incident
 
-In traditional environments, a compromised server is one machine. In AWS, a compromised IAM identity can mean the entire account — spinning up infrastructure, exfiltrating all data, creating backdoors, destroying evidence.
+In traditional environments, a compromised server is one machine. In AWS, a compromised IAM identity can mean the entire account: spinning up infrastructure, exfiltrating all data, creating backdoors, destroying evidence.
 
 ```
 Compromised IAM key
@@ -21,7 +21,7 @@ Compromised IAM key
       └── Disable CloudTrail to cover tracks
 ```
 
-> IAM compromise incidents require immediate, decisive action — every minute of inaction increases both the financial and data loss impact.
+> IAM compromise incidents require immediate, decisive action: every minute of inaction increases both the financial and data loss impact.
 
 ---
 
@@ -33,7 +33,7 @@ DETECT → SCOPE → CONTAIN → ERADICATE → RECOVER → DOCUMENT
 
 ---
 
-## Step 1 — DETECT: Recognize the Indicators
+## Step 1: DETECT: Recognize the Indicators
 
 ### GuardDuty alerts that indicate IAM compromise
 
@@ -59,7 +59,7 @@ fields eventTime, sourceIPAddress
 | filter userIdentity.userName = "dev-alice"
 | stats count(*) as calls by sourceIPAddress
 | sort calls asc
--- New IPs with low call counts are suspicious — may be first-time attacker use
+-- New IPs with low call counts are suspicious: may be first-time attacker use
 
 -- High-volume API calls (automated enumeration)
 fields userIdentity.userName, eventName
@@ -71,7 +71,7 @@ fields userIdentity.userName, eventName
 
 ---
 
-## Step 2 — SCOPE: Determine What Was Compromised
+## Step 2: SCOPE: Determine What Was Compromised
 
 Before containing, understand exactly what you are dealing with:
 
@@ -108,11 +108,11 @@ aws cloudtrail lookup-events \
 
 ---
 
-## Step 3 — CONTAIN: Stop the Bleeding
+## Step 3: CONTAIN: Stop the Bleeding
 
-**Act fast — do these in order:**
+**Act fast: do these in order:**
 
-### 3a — Revoke active console sessions
+### 3a: Revoke active console sessions
 
 ```bash
 # This invalidates all temporary console sessions immediately
@@ -120,22 +120,22 @@ aws iam delete-login-profile --user-name dev-alice
 # Then recreate if needed: aws iam create-login-profile --user-name dev-alice --password NewTempPass --password-reset-required
 ```
 
-### 3b — Disable access keys
+### 3b: Disable access keys
 
 ```bash
 # List all keys
 aws iam list-access-keys --user-name dev-alice
 
-# Disable each key (don't delete yet — you may need key ID for investigation)
+# Disable each key (don't delete yet: you may need key ID for investigation)
 aws iam update-access-key \
   --user-name dev-alice \
   --access-key-id AKIAIOSFODNN7EXAMPLE \
   --status Inactive
 ```
 
-### 3c — Attach an explicit deny policy
+### 3c: Attach an explicit deny policy
 
-This is a belt-and-suspenders approach — even if you missed a key or session, this denies everything:
+This is a belt-and-suspenders approach: even if you missed a key or session, this denies everything:
 
 ```bash
 # Create the deny-all policy
@@ -156,12 +156,12 @@ aws iam attach-user-policy \
   --policy-arn arn:aws:iam::ACCOUNT-ID:policy/EMERGENCY-DENY-ALL
 ```
 
-> The deny policy overrides any allow policies — guaranteed lockout even if the attacker added permissions you haven't found yet.
+> The deny policy overrides any allow policies: guaranteed lockout even if the attacker added permissions you haven't found yet.
 
-### 3d — Revoke all active sessions for a role (if role was compromised)
+### 3d: Revoke all active sessions for a role (if role was compromised)
 
 ```bash
-# For compromised roles — invalidate all temporary credentials
+# For compromised roles: invalidate all temporary credentials
 aws iam put-role-policy \
   --role-name CompromisedRole \
   --policy-name DenyAll \
@@ -180,11 +180,11 @@ aws iam put-role-policy \
   }'
 ```
 
-This denies all sessions issued before right now — forcing re-authentication.
+This denies all sessions issued before right now: forcing re-authentication.
 
 ---
 
-## Step 4 — SCOPE EXPANSION: Find All Backdoors
+## Step 4: SCOPE EXPANSION: Find All Backdoors
 
 The attacker likely created persistence mechanisms. Find them all:
 
@@ -234,7 +234,7 @@ aws iam delete-user --user-name attacker-backdoor
 
 ---
 
-## Step 5 — SCOPE EXPANSION: Check All Regions
+## Step 5: SCOPE EXPANSION: Check All Regions
 
 Attackers often launch resources in regions you don't monitor. Check every region:
 
@@ -254,7 +254,7 @@ aws s3api list-buckets \
   --query 'Buckets[*].{Name:Name,Created:CreationDate}' \
   --output table
 
-# Check CloudTrail — were new trails created (to log to attacker-controlled bucket)?
+# Check CloudTrail: were new trails created (to log to attacker-controlled bucket)?
 aws cloudtrail describe-trails --include-shadow-trails true
 
 # Check for new SNS subscriptions (data exfiltration via events)
@@ -266,7 +266,7 @@ done
 
 ---
 
-## Step 6 — ERADICATE: Remove All Attacker Presence
+## Step 6: ERADICATE: Remove All Attacker Presence
 
 ```bash
 # === Rotate all secrets that may have been accessed ===
@@ -299,7 +299,7 @@ aws ec2 describe-instances \
 
 ---
 
-## Step 7 — RECOVER: Restore and Harden
+## Step 7: RECOVER: Restore and Harden
 
 ```bash
 # === Re-enable the legitimate user with new credentials ===
@@ -330,7 +330,7 @@ aws guardduty list-detectors
 
 ---
 
-## Step 8 — Post-Incident Actions
+## Step 8: Post-Incident Actions
 
 ### Determine root cause
 
@@ -347,7 +347,7 @@ Common root causes of IAM compromise:
 ### Immediate hardening based on root cause
 
 ```bash
-# If access key was leaked — enforce key rotation policy
+# If access key was leaked: enforce key rotation policy
 aws iam create-account-password-policy \
   --max-password-age 90 \
   --require-uppercase-characters \
@@ -355,7 +355,7 @@ aws iam create-account-password-policy \
   --require-numbers \
   --minimum-password-length 14
 
-# If IMDS attack — enforce IMDSv2 on all instances
+# If IMDS attack: enforce IMDSv2 on all instances
 aws ec2 modify-instance-metadata-options \
   --instance-id i-xxx \
   --http-tokens required \
