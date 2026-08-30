@@ -1,4 +1,4 @@
-# 🧠 Memory Acquisition on EC2 — Live Memory Forensics
+# 🧠 Memory Acquisition on EC2: Live Memory Forensics
 
 > **Phase 3 · Document 18 of 29**  
 > **Estimated cost:** ~$1–2 · **Estimated time:** 90 minutes  
@@ -8,7 +8,7 @@
 
 ## Why Memory Forensics in the Cloud?
 
-Disk forensics (EBS snapshots) tells you what was stored. Memory forensics tells you what was running — active processes, network connections, encryption keys in use, malware that lives only in RAM and leaves no disk trace.
+Disk forensics (EBS snapshots) tells you what was stored. Memory forensics tells you what was running: active processes, network connections, encryption keys in use, malware that lives only in RAM and leaves no disk trace.
 
 ```
 DISK FORENSICS (EBS):          MEMORY FORENSICS (RAM):
@@ -19,7 +19,7 @@ Registry/cron jobs             Decrypted data in memory
 Malware dropped to disk        Fileless malware
 ```
 
-> **Critical:** Memory is volatile — when the instance stops, RAM contents are gone permanently. Memory acquisition must happen on a **running** instance, which conflicts with the principle of not touching a live compromised system. The compromise is: acquire memory first, then stop for disk acquisition.
+> **Critical:** Memory is volatile: when the instance stops, RAM contents are gone permanently. Memory acquisition must happen on a **running** instance, which conflicts with the principle of not touching a live compromised system. The compromise is: acquire memory first, then stop for disk acquisition.
 
 ---
 
@@ -32,7 +32,7 @@ Incident detected
 DO NOT stop the instance yet
       │
       ▼
-Step 1: Capture network connections (netstat/ss) — fastest
+Step 1: Capture network connections (netstat/ss): fastest
 Step 2: Capture running process list (ps, lsof)
 Step 3: Acquire full memory dump (LiME)
 Step 4: THEN stop the instance
@@ -42,7 +42,7 @@ Step 6: Analyze both memory and disk
 
 ---
 
-## Step 1 — Quick Triage Without LiME
+## Step 1: Quick Triage Without LiME
 
 Before acquiring full memory, grab volatile data quickly via SSH or Session Manager. This takes seconds and captures the most time-sensitive evidence.
 
@@ -91,7 +91,7 @@ aws s3 cp /tmp/forensic-*.txt s3://lab-private-yourname-2024/forensics/IR-2024-0
 
 ---
 
-## Step 2 — Install LiME (Linux Memory Extractor)
+## Step 2: Install LiME (Linux Memory Extractor)
 
 LiME is a kernel module that captures a full memory image from a running Linux system. It is the standard tool for Linux memory acquisition.
 
@@ -105,7 +105,7 @@ sudo apt install -y build-essential linux-headers-$(uname -r) git
 git clone https://github.com/504ensicsLabs/LiME.git
 cd LiME/src
 
-# Compile LiME — must match kernel version of the TARGET instance
+# Compile LiME: must match kernel version of the TARGET instance
 make
 ls -la lime-*.ko
 ```
@@ -114,7 +114,7 @@ ls -la lime-*.ko
 
 ---
 
-## Step 3 — Transfer LiME to the Compromised Instance
+## Step 3: Transfer LiME to the Compromised Instance
 
 ```bash
 # From your forensic workstation
@@ -132,7 +132,7 @@ sudo aws s3 cp s3://lab-private-yourname-2024/tools/lime-$(uname -r).ko /tmp/
 
 ---
 
-## Step 4 — Acquire Memory with LiME
+## Step 4: Acquire Memory with LiME
 
 On the compromised instance:
 
@@ -143,7 +143,7 @@ sudo insmod /tmp/lime-$(uname -r).ko \
   "path=tcp:4444 format=lime timeout=0"
 ```
 
-On the forensic workstation — receive the memory stream:
+On the forensic workstation: receive the memory stream:
 
 ```bash
 # Receive and save the memory dump
@@ -153,7 +153,7 @@ nc <compromised-instance-private-ip> 4444 > /home/ubuntu/memory-IR-2024-001.lime
 sha256sum /home/ubuntu/memory-IR-2024-001.lime > /home/ubuntu/memory-hash.txt
 ```
 
-> **TCP streaming** means memory is transferred directly from RAM to the forensic workstation without ever touching the compromised instance's disk — preserving evidence integrity.
+> **TCP streaming** means memory is transferred directly from RAM to the forensic workstation without ever touching the compromised instance's disk: preserving evidence integrity.
 
 For local dump (if you prefer to write to disk first):
 
@@ -167,7 +167,7 @@ aws s3 cp /tmp/memory.lime s3://lab-private-yourname-2024/forensics/IR-2024-001/
 
 ---
 
-## Step 5 — Set Up Volatility 3 for Analysis
+## Step 5: Set Up Volatility 3 for Analysis
 
 Volatility is the standard memory analysis framework.
 
@@ -188,7 +188,7 @@ python3 vol.py --help
 
 ---
 
-## Step 6 — Memory Analysis with Volatility 3
+## Step 6: Memory Analysis with Volatility 3
 
 ```bash
 # Set the memory image path for convenience
@@ -203,7 +203,7 @@ python3 vol.py -f $MEMDUMP banners.Banners
 # List all processes (like ps)
 python3 vol.py -f $MEMDUMP linux.pslist.PsList
 
-# Process tree (parent-child relationships — spot unusual parents)
+# Process tree (parent-child relationships: spot unusual parents)
 python3 vol.py -f $MEMDUMP linux.pstree.PsTree
 
 # Processes with suspicious parent-child relationships
@@ -211,7 +211,7 @@ python3 vol.py -f $MEMDUMP linux.pstree.PsTree
 python3 vol.py -f $MEMDUMP linux.psaux.PsAux
 
 # Find hidden processes (rootkit detection)
-# Compares process list from multiple sources — discrepancies = hiding
+# Compares process list from multiple sources: discrepancies = hiding
 python3 vol.py -f $MEMDUMP linux.check_idt.Check_idt
 
 # ===== NETWORK ANALYSIS =====
@@ -255,9 +255,9 @@ python3 vol.py -f $MEMDUMP linux.pslist.PsList | grep ssh
 
 ---
 
-## Step 7 — String Analysis
+## Step 7: String Analysis
 
-Strings extracts human-readable text from the memory dump — useful for finding hardcoded credentials, URLs, and C2 addresses:
+Strings extracts human-readable text from the memory dump: useful for finding hardcoded credentials, URLs, and C2 addresses:
 
 ```bash
 # Extract all strings (min 8 chars)
@@ -284,12 +284,12 @@ grep -E "[A-Za-z0-9+/]{50,}={0,2}" /home/ubuntu/strings-output.txt | head -20 | 
 
 ---
 
-## Step 8 — Process Memory Dump (Targeted Acquisition)
+## Step 8: Process Memory Dump (Targeted Acquisition)
 
 Instead of acquiring full memory, target a specific suspicious process:
 
 ```bash
-# On the compromised instance — dump a specific process memory
+# On the compromised instance: dump a specific process memory
 PID=$(pgrep suspicious-process-name)
 
 # Create a core dump of the process
@@ -304,9 +304,9 @@ aws s3 cp /tmp/process-dump.$PID s3://lab-private-yourname-2024/forensics/
 
 ---
 
-## Step 9 — Fileless Malware Detection
+## Step 9: Fileless Malware Detection
 
-Fileless malware exists only in memory — no file on disk. Common indicators:
+Fileless malware exists only in memory: no file on disk. Common indicators:
 
 ```bash
 # Find processes where the executable has been deleted from disk
@@ -358,7 +358,7 @@ After acquisition:
 ## Cleanup
 
 ```bash
-# On the compromised instance — remove LiME module
+# On the compromised instance: remove LiME module
 sudo rmmod lime
 
 # Terminate compromised instance
